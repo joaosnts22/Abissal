@@ -168,7 +168,10 @@ const pid=cur.id;wq=wq.then(async()=>{if(ans){const{error}=await sb.from('answer
 const{error}=await sb.from('dives').upsert({player_id:uid,day:today,prompt_ids:DAILY.map(i=>BANK[i].id),answers:local.ans.map(a=>a||''),tiers:local.tt,points:local.pts,score:local.sc,done:local.done,updated_at:new Date().toISOString()});if(error)throw error}).catch(e=>{console.error(e);canWrite=false;status()})}
 async function loadMine(){const{data}=await sb.from('dives').select('*').eq('player_id',uid).eq('day',today).maybeSingle();if(!data)return;me={d:today,i:data.answers.length,ans:data.answers.map(a=>a||null),tt:data.tiers,pts:data.points,sc:data.score,done:data.done}}
 async function judge(P,v){const{data,error}=await sb.functions.invoke('judge',{body:{prompt_id:P.id,answer:v}});if(error){const st=error.context&&error.context.status;throw{code:st===429?'rate_limited':'error'}}if(!data||typeof data.valid!=='boolean')throw{code:'error'};return data}
-async function saveNick(n){nickname=n;try{localStorage.setItem('abissal-nick',n)}catch(e){}if(online){const{error}=await sb.from('players').upsert({id:uid,nickname:n});if(error)console.error(error)}}
+const NICK_MSG={length:'Use de 2 a 20 caracteres.',chars:'Use só letras, números, espaço, ponto, hífen ou sublinhado.',blocked:'Esse apelido não é permitido. Escolha outro.',rate_limited:'Muitas tentativas de apelido hoje. Tente de novo mais tarde.',unavailable:'Não consegui conferir o apelido agora. Você vai aparecer como “Mergulhador” no placar.'};
+async function saveNick(n){if(!online){nickname=n;try{localStorage.setItem('abissal-nick',n)}catch(e){}return{ok:true}}
+try{const{data,error}=await sb.functions.invoke('nickname',{body:{nickname:n}});if(error){const st=error.context&&error.context.status;return{ok:false,reason:st===429?'rate_limited':'unavailable'}}
+if(data&&data.ok){nickname=data.nickname;try{localStorage.setItem('abissal-nick',nickname)}catch(e){}return data}return data||{ok:false,reason:'unavailable'}}catch(e){return{ok:false,reason:'unavailable'}}}
 /* ---------- scoring ---------- */
 /* Rarity = Gemini's obscurity rating (1-7). Real players can only make an answer LESS rare:
    once a prompt has enough answers, a popular answer is capped at a lower tier. */
@@ -190,7 +193,9 @@ function pickDaily(){const R=rng('abissal2-'+today),ord=BANK.map((_,i)=>i);for(l
 function screenIntro(){if(me.d===today&&me.done)return screenDone();const part=me.d===today&&me.i>0;
 stage.innerHTML=`<div class="meta"><span>Mergulho de ${today.slice(8)}/${today.slice(5,7)}</span><span>7 perguntas · 25 s</span></div><h2 class="q">Pense no óbvio. Depois, não responda o óbvio.</h2><p>Banana é uma fruta, mas vale 10 pontos. Grumixama também é, e quase ninguém conhece. As duas respostas mais obscuras de cada pergunta valem 150: são as “um em um milhão”. Quando você responde, a isca desce pelo mar, e só as respostas raras chegam ao fundo.</p><p class="small">${BANK.length} perguntas no banco e mais de ${fmt(Math.floor(BANK.reduce((s,p)=>s+p.e.length,0)/1000)*1000)} respostas conhecidas. As perguntas sorteadas mudam todo dia.</p>
 <form id="nf" class="row" autocomplete="off"><input id="nick" aria-label="Seu apelido no placar" placeholder="Seu apelido no placar" maxlength="20" value="${esc(nickname)}"><button class="btn" id="go">${part?`Continuar da pergunta ${me.i+1}`:'Mergulhar'}</button></form><div class="row" style="margin-top:10px"><button class="ghost" id="pr">Treino livre</button></div><p class="msg" id="nmsg"></p>`;
-$('#nf').addEventListener('submit',async ev=>{ev.preventDefault();audio();const n=$('#nick').value.trim();if(n.length<2){$('#nmsg').textContent='Escolha um apelido com pelo menos 2 letras.';$('#nick').focus();return}if(n!==nickname)saveNick(n);start()});
+$('#nf').addEventListener('submit',async ev=>{ev.preventDefault();audio();const n=$('#nick').value.replace(/\s+/g,' ').trim();const msg=$('#nmsg');if(n.length<2){msg.textContent='Escolha um apelido com pelo menos 2 letras.';$('#nick').focus();return}
+if(n!==nickname){const go=$('#go');go.disabled=true;msg.className='msg ok';msg.textContent='Conferindo o apelido…';const res=await saveNick(n);go.disabled=false;msg.className='msg';
+if(!res.ok){msg.textContent=NICK_MSG[res.reason]||NICK_MSG.blocked;if(res.reason!=='unavailable'){$('#nick').select();return}await sleep(1800)}}start()});
 $('#pr').onclick=()=>{audio();practice()};gauge()}
 function start(){if(me.d!==today){me=blank();me.d=today}mode='daily';next()}
 function practice(){mode='practice';next()}
