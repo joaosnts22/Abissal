@@ -65,7 +65,7 @@ npx supabase functions deploy judge --no-verify-jwt
 Optional secrets:
 - `GEMINI_MODEL`: defaults to `gemini-3.5-flash-lite`. Check current model names at [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models).
 - `JUDGE_DAILY_LIMIT`: defaults to `40`.
-- `PROMPTS_URL`: defaults to `https://joaosnts22.github.io/abissal/prompts.json`.
+- `PROMPTS_URL`: defaults to `https://joaosnts22.github.io/Abissal/prompts.json`.
 
 Test it by typing an answer that is not on any list, like `jambo-rosa` for "Uma fruta".
 

@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
-const PROMPTS_URL = Deno.env.get("PROMPTS_URL") ?? "https://joaosnts22.github.io/abissal/prompts.json";
+const PROMPTS_URL = Deno.env.get("PROMPTS_URL") ?? "https://joaosnts22.github.io/Abissal/prompts.json";
 const DAILY_LIMIT = Number(Deno.env.get("JUDGE_DAILY_LIMIT") ?? "40"); // model calls per player per 24h
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
