@@ -185,6 +185,46 @@ P('genero', 'Um gênero ou ritmo musical', 'genero', GENERO)
 for w, txt in LETRAS:
     P('letras-' + w, f'Uma palavra de 3+ letras usando só as letras de {w.upper()}', 'letras', txt, letters=w)
 
+# ---- Obscurity ratings (1 = obvious ... 7 = extremely obscure), produced once by the rating job.
+# ratings.json: {prompt_id: [rating per answer, in list order]}. Letter variants reuse their base prompt's ratings.
+RATINGS = {}
+rp = os.path.join(HERE, 'ratings.json')
+if os.path.exists(rp):
+    RATINGS = {k: [int(c) for c in v] if isinstance(v, str) else v for k, v in json.load(open(rp, encoding='utf-8')).items()}
+
+def finish(p):
+    entries = p['a'].split(';')
+    if p['g'].endswith('-l'):
+        base_id = p['id'].rsplit('-', 1)[0]
+        p['s'] = p['id'].rsplit('-', 1)[1].upper()
+        base = next(b for b in PROMPTS if b['id'] == base_id)
+        base_names = [e.split('/')[0] for e in base['a'].split(';')]
+        br = RATINGS.get(base_id, [])
+        by_name = {n: (br[i] if i < len(br) else 4) for i, n in enumerate(base_names)}
+        r = [by_name.get(e.split('/')[0], 4) for e in entries]
+    else:
+        rr = RATINGS.get(p['id'], [])
+        r = [rr[i] if i < len(rr) else 4 for i in range(len(entries))]
+    # "Um em um milhão": the 2 most obscure answers of each prompt (only if they are at least "obscura")
+    order = sorted(range(len(entries)), key=lambda i: (-r[i], -i))
+    top = [i for i in order[:2] if r[i] >= 6]
+    r = [6 if x == 7 else x for x in r]
+    for i in top:
+        r[i] = 7
+    p['a'] = ';'.join(f'{e}#{x}' for e, x in zip(entries, r))
+
+for p in PROMPTS:
+    if not p['g'].endswith('-l'):
+        p['_raw'] = p['a']
+for p in PROMPTS:
+    if p['g'].endswith('-l'):
+        finish(p)
+for p in PROMPTS:
+    if not p['g'].endswith('-l'):
+        finish(p)
+for p in PROMPTS:
+    p.pop('_raw', None)
+
 ids = [p['id'] for p in PROMPTS]
 assert len(ids) == len(set(ids)), [i for i in ids if ids.count(i) > 1]
 json.dump(PROMPTS, open(os.path.join(HERE, '..', 'site', 'prompts.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))

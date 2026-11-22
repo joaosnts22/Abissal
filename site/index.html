@@ -54,6 +54,8 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 .layer .tag span{font-weight:500;color:var(--mute);font-size:13px}
 .layer .deco{position:absolute;opacity:.22}
 .layer.hit{box-shadow:inset 0 0 0 2px var(--glow)}
+.layer.star{background-image:radial-gradient(#fff 1.2px,transparent 1.8px),radial-gradient(rgba(242,230,255,.75) 1px,transparent 1.6px),radial-gradient(circle at 50% 60%,rgba(170,120,255,.18),transparent 70%);background-size:37px 41px,59px 67px,100% 100%}
+.layer.star .tag b{text-shadow:0 0 12px rgba(242,230,255,.9)}
 .line{position:absolute;left:50%;top:0;width:2px;height:118px;margin-left:-1px;background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.75))}
 .lure{position:absolute;left:50%;top:112px;width:38px;height:54px;margin-left:-19px;transform-origin:50% 0}
 .lure.tug{animation:tug .35s ease-in-out}@keyframes tug{30%{transform:translateY(-7px) rotate(-6deg)}70%{transform:translateY(2px) rotate(4deg)}}
@@ -112,7 +114,7 @@ footer{color:var(--mute);font-size:13px;padding-top:0}
 </section>
 <section class="band lower wrap">
 <div class="panel"><h3>Como a raridade funciona</h3>
-<p class="small">Cada resposta é comparada com tudo que os outros mergulhadores já responderam para a mesma pergunta. Até juntar bastante gente, uma estimativa inicial de popularidade completa a conta. Se sua resposta não estiver na lista, um juiz automático confere se ela vale. Cada ponto vale 15 m de profundidade.</p>
+<p class="small">Cada resposta conhecida tem uma nota de raridade, de óbvia a obscura. Conforme mais gente joga, respostas que muitos dão perdem valor: quanto mais popular, mais raso. Se sua resposta não estiver na lista, um juiz automático confere se ela vale e quão obscura ela é. Cada ponto vale 10 m de profundidade.</p>
 <ul class="tiers" id="tiers"></ul></div>
 <div class="panel"><h3>Mergulhadores de hoje</h3><div id="board" class="small">Ninguém terminou o mergulho de hoje ainda.</div></div>
 </section>
@@ -122,12 +124,14 @@ footer{color:var(--mute);font-size:13px;padding-top:0}
 <script>
 {
 const TIERS=[
-{n:'Sardinha',min:15,p:10,c:'#b9d6de',sq:'⬜',d:'15% ou mais das respostas',bg:'#1a7f93'},
-{n:'Baiacu',min:8,p:25,c:'#7fd6c9',sq:'🟦',d:'de 8% a 15%',bg:'#126477'},
-{n:'Polvo',min:3,p:45,c:'#ffb86b',sq:'🟩',d:'de 3% a 8%',bg:'#0c4757'},
-{n:'Arraia',min:1,p:65,c:'#79acff',sq:'🟧',d:'de 1% a 3%',bg:'#08303c'},
-{n:'Lula-gigante',min:.25,p:85,c:'#ff86a8',sq:'🟪',d:'de 0,25% a 1%',bg:'#051c25'},
-{n:'Peixe-abissal',min:0,p:100,c:'#ffe066',sq:'🟨',d:'menos de 0,25%: quase ninguém',bg:'#020a0e'}];
+{n:'Sardinha',p:10,c:'#b9d6de',sq:'⬜',d:'Resposta óbvia: quase todo mundo pensa nela',bg:'#1a7f93'},
+{n:'Baiacu',p:25,c:'#7fd6c9',sq:'🟦',d:'Comum: muita gente daria',bg:'#126477'},
+{n:'Polvo',p:45,c:'#ffb86b',sq:'🟩',d:'Conhecida, mas pouca gente lembra na hora',bg:'#0c4757'},
+{n:'Arraia',p:65,c:'#79acff',sq:'🟧',d:'Rara: só quem conhece o assunto',bg:'#08303c'},
+{n:'Lula-gigante',p:85,c:'#ff86a8',sq:'🟪',d:'Muito rara',bg:'#051c25'},
+{n:'Peixe-abissal',p:100,c:'#ffe066',sq:'🟨',d:'Obscura: quase ninguém daria',bg:'#020a0e'},
+{n:'Um em um milhão',p:150,c:'#f2e6ff',sq:'⭐',d:'As respostas mais obscuras de cada pergunta',bg:'#000000'}];
+const MPP=10; /* metros por ponto */
 const ZONES=[[0,'Superfície'],[200,'Zona do crepúsculo'],[1000,'Zona da meia-noite'],[4000,'Zona abissal'],[6000,'Zona hadal'],[10994,'Fossa das Marianas']];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -138,7 +142,7 @@ const fmt=n=>Math.round(n).toLocaleString('pt-BR');
 const fmtPct=n=>n<.01?'menos de 0,01%':(n<1?n.toLocaleString('pt-BR',{maximumFractionDigits:2}):n.toLocaleString('pt-BR',{maximumFractionDigits:1}))+'%';
 const fishSvg=t=>`<svg viewBox="0 0 120 70" aria-hidden="true" style="color:${t?t.c:'#5d7d84'}"><use href="#fish"/>${t&&t.p===100?'<use href="#lantern"/>':''}</svg>`;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function build(r){const e=r.a.split(';').filter(Boolean).map((x,i)=>{const al=x.split('/');return{name:al[0],k:key(al[0]),keys:[...new Set(al.map(key))].filter(Boolean),w:20*Math.pow(.8,i)}});const idx=new Map();e.forEach((o,i)=>o.keys.forEach(k=>{if(!idx.has(k))idx.set(k,i)}));return{id:r.id,q:r.q,g:r.g,l:r.l||null,e,idx,W:e.reduce((s,o)=>s+o.w,0)}}
+function build(r){const e=r.a.split(';').filter(Boolean).map(x=>{const[body,rt]=x.split('#');const al=body.split('/');return{name:al[0],k:key(al[0]),keys:[...new Set(al.map(key))].filter(Boolean),r:Math.min(7,Math.max(1,+rt||4))}});const idx=new Map();e.forEach((o,i)=>o.keys.forEach(k=>{if(!idx.has(k))idx.set(k,i)}));return{id:r.id,q:r.q,g:r.g,l:r.l||null,s:r.s||null,e,idx}}
 function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
 function fuzzy(k,keys){const tol=k.length>=9?2:k.length>=5?1:0;if(!tol)return null;let best=null,bd=9;for(const kk of keys){if(kk.length<4)continue;const d=lev(k,kk);if(d<=tol&&d<bd){bd=d;best=kk}}return best}
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
@@ -153,11 +157,11 @@ function audio(){try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContex
 function tone(f,d=.1,type='sine',v=.07,when=0){if(!soundOn||!ac)return;try{const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
 const ping=()=>{tone(880,.6,'sine',.05);tone(660,.8,'sine',.03,.12)};
 const blip=j=>tone(300+j*90,.12,'triangle',.06);
-const finale=ti=>{const notes=[[392],[392,494],[392,494,587],[440,554,659],[440,554,659,880],[523,659,784,1047,1319]][ti];notes.forEach((f,i)=>tone(f,.5,'sine',.06,i*.09))};
+const finale=ti=>{const notes=[[392],[392,494],[392,494,587],[440,554,659],[440,554,659,880],[523,659,784,1047,1319],[523,659,784,1047,1319,1568,2093]][ti];notes.forEach((f,i)=>tone(f,.5,'sine',.06,i*.09))};
 const sndBtn=$('#snd');const sndLabel=()=>{sndBtn.textContent=soundOn?'Som ligado':'Som desligado';sndBtn.setAttribute('aria-pressed',soundOn)};sndLabel();
 sndBtn.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem('abissal-sound',soundOn?'1':'0')}catch(e){}sndLabel();audio()};
 /* ---------- backend (Supabase) ---------- */
-async function loadCounts(ids){if(!online)return;try{const[{data:c},{data:x}]=await Promise.all([sb.rpc('get_counts',{p_ids:ids}),sb.rpc('get_extras',{p_ids:ids})]);for(const id of ids){counts[id]={};extras[id]=new Map()}for(const r of c||[])counts[r.prompt_id][r.answer_key]=r.n;for(const r of x||[])extras[r.prompt_id].set(r.answer_key,r.name)}catch(e){}}
+async function loadCounts(ids){if(!online)return;try{const[{data:c},{data:x}]=await Promise.all([sb.rpc('get_counts',{p_ids:ids}),sb.rpc('get_extras',{p_ids:ids})]);for(const id of ids){counts[id]={};extras[id]=new Map()}for(const r of c||[])counts[r.prompt_id][r.answer_key]=r.n;for(const r of x||[])extras[r.prompt_id].set(r.answer_key,{name:r.name,r:r.rating||4})}catch(e){}}
 function save(ans){const local=JSON.parse(JSON.stringify(me));try{localStorage.setItem('abissal-me',JSON.stringify(local))}catch(e){}if(!online||!canWrite)return;
 const pid=cur.id;wq=wq.then(async()=>{if(ans){const{error}=await sb.from('answers').upsert({prompt_id:pid,player_id:uid,answer_key:ans.k.slice(0,80),answer_name:ans.name.slice(0,80),day:today,updated_at:new Date().toISOString()});if(error)throw error}
 const{error}=await sb.from('dives').upsert({player_id:uid,day:today,prompt_ids:DAILY.map(i=>BANK[i].id),answers:local.ans.map(a=>a||''),tiers:local.tt,points:local.pts,score:local.sc,done:local.done,updated_at:new Date().toISOString()});if(error)throw error}).catch(e=>{console.error(e);canWrite=false;status()})}
@@ -165,19 +169,25 @@ async function loadMine(){const{data}=await sb.from('dives').select('*').eq('pla
 async function judge(P,v){const{data,error}=await sb.functions.invoke('judge',{body:{prompt_id:P.id,answer:v}});if(error){const st=error.context&&error.context.status;throw{code:st===429?'rate_limited':'error'}}if(!data||typeof data.valid!=='boolean')throw{code:'error'};return data}
 async function saveNick(n){nickname=n;try{localStorage.setItem('abissal-nick',n)}catch(e){}if(online){const{error}=await sb.from('players').upsert({id:uid,nickname:n});if(error)console.error(error)}}
 /* ---------- scoring ---------- */
-function rarity(P,ans){const c=counts[P.id]||{};const C=Object.values(c).reduce((s,n)=>s+n,0);const pct=100*(ans.w+(c[ans.k]||0))/(P.W+C);return{pct,ti:TIERS.findIndex(t=>pct>=t.min),C}}
-function top3(P){const c=counts[P.id]||{};const m=new Map(P.e.map(o=>[o.k,{n:o.name,v:o.w+(c[o.k]||0)}]));for(const k in c)if(!m.has(k)){const n=extras[P.id]?.get(k);if(n)m.set(k,{n,v:c[k]})}return[...m.values()].sort((a,b)=>b.v-a.v).slice(0,3).map(o=>o.n)}
-function deepCut(P,not){const c=counts[P.id]||{};const pool=P.e.filter((o,i)=>i>P.e.length*.6&&!c[o.k]&&o.k!==not);return pool.length?pool[Math.floor(Math.random()*pool.length)].name:null}
-function findLocal(P,txt){const k=key(txt);if(!k)return null;const ent=i=>({name:P.e[i].name,k:P.e[i].k,w:P.e[i].w});if(P.idx.has(k))return ent(P.idx.get(k));const ex=extras[P.id];if(ex&&ex.has(k))return{name:ex.get(k),k,w:0};const f=fuzzy(k,P.idx.keys());if(f)return ent(P.idx.get(f));if(ex){const g=fuzzy(k,ex.keys());if(g)return{name:ex.get(g),k:g,w:0}}return null}
+/* Rarity = Gemini's obscurity rating (1-7). Real players can only make an answer LESS rare:
+   once a prompt has enough answers, a popular answer is capped at a lower tier. */
+const RD=['óbvia','comum','conhecida, mas pouco lembrada','rara','muito rara','obscura','uma em um milhão'];
+function rarity(P,ans){const c=counts[P.id]||{};const C=Object.values(c).reduce((s,n)=>s+n,0);const n=c[ans.k]||0;let ti=Math.min(6,Math.max(0,(ans.r||4)-1));
+if(C>=10){const sh=100*n/C;const cap=sh>=15?0:sh>=8?1:sh>=4?2:sh>=2?3:sh>=1?4:6;ti=Math.min(ti,cap)}
+if(ti===6&&n>=2)ti=5;if(ti>=5&&C>=5&&n/C>=.05)ti=Math.min(ti,4);
+return{ti,n,C}}
+function top3(P){const c=counts[P.id]||{};const m=new Map(P.e.map((o,i)=>[o.k,{n:o.name,v:(c[o.k]||0)*10+(8-o.r)*3-i/1000}]));for(const k in c)if(!m.has(k)){const x=extras[P.id]?.get(k);if(x)m.set(k,{n:x.name,v:c[k]*10})}return[...m.values()].sort((a,b)=>b.v-a.v).slice(0,3).map(o=>o.n)}
+function deepCut(P,not){const c=counts[P.id]||{};const pool=P.e.filter(o=>o.r>=6&&!c[o.k]&&o.k!==not);const best=pool.filter(o=>o.r===7);const from=best.length?best:pool;return from.length?from[Math.floor(Math.random()*from.length)].name:null}
+function findLocal(P,txt){const k=key(txt);if(!k)return null;const ent=i=>({name:P.e[i].name,k:P.e[i].k,r:P.e[i].r});if(P.idx.has(k))return ent(P.idx.get(k));const ex=extras[P.id];const exa=kk=>({name:ex.get(kk).name,k:kk,r:ex.get(kk).r,extra:true});if(ex&&ex.has(k))return exa(k);const f=fuzzy(k,P.idx.keys());if(f)return ent(P.idx.get(f));if(ex){const g=fuzzy(k,ex.keys());if(g)return exa(g)}return null}
 const zoneOf=m=>{let z=ZONES[0][1];for(const[d,n]of ZONES)if(m>=d)z=n;return z};
 const pos=m=>Math.sqrt(Math.min(m,10994)/10994)*100;
 function buildCol(){$('#col').innerHTML=ZONES.map(([d,n],i)=>`<div class="z${i===ZONES.length-1?' end':''}" style="top:${i===ZONES.length-1?'calc(100% - 44px)':pos(d)+'%'}"><b>${fmt(d)} m</b>${n}</div>`).join('')+`<div class="diver" id="diver" style="top:3%"><span id="dm">0 m</span><i></i></div>`}
-function gauge(){const m=me.d===today?me.sc*15:0;const dv=$('#diver');if(dv){dv.style.top=Math.max(3,Math.min(96,pos(m)))+'%';$('#dm').textContent=fmt(m)+' m'}$('#mm').textContent=fmt(m)+' m';$('#mz').textContent=zoneOf(m)}
+function gauge(){const m=me.d===today?me.sc*MPP:0;const dv=$('#diver');if(dv){dv.style.top=Math.max(3,Math.min(96,pos(m)))+'%';$('#dm').textContent=fmt(m)+' m'}$('#mm').textContent=fmt(m)+' m';$('#mz').textContent=zoneOf(m)}
 function status(){const n=$('#net');if(!online){n.textContent='Sem conexão com o placar: a raridade usa só a estimativa inicial e seu progresso fica neste navegador.';return}if(!canWrite){n.textContent='Não consegui salvar suas respostas no placar. Recarregue a página.';return}n.textContent=`Raridade ao vivo · ${players} ${players===1?'mergulhador':'mergulhadores'} até agora`}
 function pickDaily(){const R=rng('abissal2-'+today),ord=BANK.map((_,i)=>i);for(let i=ord.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]]}const out=[],gs=new Set();let lettered=0;for(const i of ord){const P=BANK[i];const lt=P.g.endsWith('-l')||P.g==='letras';const g=P.g.replace(/-l$/,'');if(gs.has(g)||(lt&&lettered>=1))continue;gs.add(g);if(lt)lettered++;out.push(i);if(out.length===7)break}return out}
 /* ---------- screens ---------- */
 function screenIntro(){if(me.d===today&&me.done)return screenDone();const part=me.d===today&&me.i>0;
-stage.innerHTML=`<div class="meta"><span>Mergulho de ${today.slice(8)}/${today.slice(5,7)}</span><span>7 perguntas · 25 s</span></div><h2 class="q">Pense no óbvio. Depois, não responda o óbvio.</h2><p>Banana é uma fruta, mas vale 10 pontos. Jambo também é, e quase ninguém lembra dele. Quando você responde, a isca desce pelo mar, e só as respostas raras chegam ao fundo.</p><p class="small">${BANK.length} perguntas no banco e mais de ${fmt(Math.floor(BANK.reduce((s,p)=>s+p.e.length,0)/1000)*1000)} respostas conhecidas. As perguntas sorteadas mudam todo dia.</p>
+stage.innerHTML=`<div class="meta"><span>Mergulho de ${today.slice(8)}/${today.slice(5,7)}</span><span>7 perguntas · 25 s</span></div><h2 class="q">Pense no óbvio. Depois, não responda o óbvio.</h2><p>Banana é uma fruta, mas vale 10 pontos. Grumixama também é, e quase ninguém conhece. As duas respostas mais obscuras de cada pergunta valem 150: são as “um em um milhão”. Quando você responde, a isca desce pelo mar, e só as respostas raras chegam ao fundo.</p><p class="small">${BANK.length} perguntas no banco e mais de ${fmt(Math.floor(BANK.reduce((s,p)=>s+p.e.length,0)/1000)*1000)} respostas conhecidas. As perguntas sorteadas mudam todo dia.</p>
 <form id="nf" class="row" autocomplete="off"><input id="nick" aria-label="Seu apelido no placar" placeholder="Seu apelido no placar" maxlength="20" value="${esc(nickname)}"><button class="btn" id="go">${part?`Continuar da pergunta ${me.i+1}`:'Mergulhar'}</button></form><div class="row" style="margin-top:10px"><button class="ghost" id="pr">Treino livre</button></div><p class="msg" id="nmsg"></p>`;
 $('#nf').addEventListener('submit',async ev=>{ev.preventDefault();audio();const n=$('#nick').value.trim();if(n.length<2){$('#nmsg').textContent='Escolha um apelido com pelo menos 2 letras.';$('#nick').focus();return}if(n!==nickname)saveNick(n);start()});
 $('#pr').onclick=()=>{audio();practice()};gauge()}
@@ -195,25 +205,26 @@ function pauseTimer(){clearInterval(timer);left=Math.max(0,tEnd-Date.now());$('#
 function resumeTimer(){$('#tbar')?.classList.remove('paused');if(!locked)runTimer()}
 function reject(m){const inp=$('#ans');$('#msg').className='msg';$('#msg').textContent=m;if(inp){inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select()}tone(140,.18,'sawtooth',.03)}
 async function submit(v){if(!v||locked||busy)return;if(cur.l&&!lettersOk(v,cur.l))return reject(`“${v}” não dá para formar só com as letras de ${cur.l.toUpperCase()}.`);
+if(cur.s&&!key(v).startsWith(cur.s.toLowerCase()))return reject(`“${v}” não começa com a letra ${cur.s}.`);
 await Promise.race([countsReady,sleep(1500)]);
 const hit=findLocal(cur,v);if(hit)return resolve(hit,0);
 if(!online||!judgeOK)return reject(`“${v}” não está na lista. Tente outra.`);
 if(checks>=4)return reject('Chega de consultas nesta pergunta: tente algo da lista.');
 checks++;busy=true;pauseTimer();$('#msg').className='msg ok';$('#msg').textContent=`Consultando o juiz sobre “${v}”… o tempo está pausado.`;$('#send').disabled=true;
 try{const r=await judge(cur,v);busy=false;$('#send').disabled=false;if(locked)return;
-if(r.valid){const name=String(r.name||v).slice(0,60);const loc=findLocal(cur,name);resolve(loc||{name,k:key(v),w:0},0)}
+if(r.valid){const name=String(r.name||v).slice(0,60);const loc=findLocal(cur,name);resolve(loc||{name,k:key(v),r:Math.min(7,Math.max(1,+r.rating||4)),extra:true},0)}
 else{resumeTimer();reject(`O juiz não aceitou “${v}”. Tente outra.`)}}
 catch(e){busy=false;$('#send').disabled=false;resumeTimer();reject(e&&e.code==='rate_limited'?'Você atingiu o limite de consultas ao juiz por hoje. Tente algo da lista.':`Não consegui conferir “${v}”. Tente outra.`)}}
 function resolve(ans,code){if(locked)return;locked=true;clearInterval(timer);let r=null,t=null,pts=0;if(ans){r=rarity(cur,ans);t=TIERS[r.ti];pts=t.p}
 if(mode==='daily'){me.pts.push(pts);me.ans.push(ans?ans.name:null);me.tt.push(ans?r.ti:-1);me.i++;me.sc+=pts;me.done=me.i>=7;save(ans)}
 reveal(ans,r,t,code)}
 /* ---------- the dive ---------- */
-const BH=230,TOP=70,LY=120;
+const BH=210,TOP=70,LY=120;
 function reveal(ans,r,t,code){const last=mode==='daily'&&me.done;
-const layers=TIERS.map((T,j)=>`<div class="layer" id="ly${j}" style="top:${TOP+j*BH}px;height:${BH}px;background-color:${T.bg}"><div class="tag">${fishSvg(T)}<b style="color:${T.c}">${T.n}</b><span>${T.p} pts</span></div><svg class="deco" viewBox="0 0 120 70" style="width:${54+j*10}px;right:${3+((j*7)%12)}%;top:${120+((j*53)%70)}px;color:${T.c}"><use href="#fish"/></svg></div>`).join('');
-stage.innerHTML=`<div class="meta"><span>${esc(cur.q)}</span><span>${mode==='daily'?`${me.i} de 7`:'Treino'}</span></div>${ans?`<p class="your">Sua isca: <b>${esc(ans.name)}</b></p>`:''}<div class="abyss" id="aby"><div class="world" id="world" style="height:${TOP+6*BH+40}px"><div class="surf"></div>${layers}</div><div class="line"></div><div class="lure" id="lure"><svg viewBox="0 0 38 54" width="38" height="54"><use href="#bait"/></svg></div><div class="depth" id="dc">0 m</div><div class="verdict" id="vd"></div><div class="skiphint">${ans?'Toque para pular':''}</div></div><div class="after" id="after"></div>`;
+const layers=TIERS.map((T,j)=>`<div class="layer${j===6?' star':''}" id="ly${j}" style="top:${TOP+j*BH}px;height:${BH}px;background-color:${T.bg}"><div class="tag">${fishSvg(T)}<b style="color:${T.c}">${T.n}</b><span>${T.p} pts</span></div><svg class="deco" viewBox="0 0 120 70" style="width:${54+j*10}px;right:${3+((j*7)%12)}%;top:${120+((j*53)%70)}px;color:${T.c}"><use href="#fish"/></svg></div>`).join('');
+stage.innerHTML=`<div class="meta"><span>${esc(cur.q)}</span><span>${mode==='daily'?`${me.i} de 7`:'Treino'}</span></div>${ans?`<p class="your">Sua isca: <b>${esc(ans.name)}</b></p>`:''}<div class="abyss" id="aby"><div class="world" id="world" style="height:${TOP+TIERS.length*BH+40}px"><div class="surf"></div>${layers}</div><div class="line"></div><div class="lure" id="lure"><svg viewBox="0 0 38 54" width="38" height="54"><use href="#bait"/></svg></div><div class="depth" id="dc">0 m</div><div class="verdict" id="vd"></div><div class="skiphint">${ans?'Toque para pular':''}</div></div><div class="after" id="after"></div>`;
 const world=$('#world'),dc=$('#dc'),lure=$('#lure'),aby=$('#aby');
-const M=TIERS.map(T=>T.p*15);
+const M=TIERS.map(T=>T.p*MPP);
 const keyY=[30],keyM=[0];if(ans){for(let j=1;j<=r.ti;j++){keyY.push(TOP+j*BH);keyM.push(M[j-1])}keyY.push(TOP+r.ti*BH+BH*.55);keyM.push(M[r.ti])}
 const mAt=y=>{for(let i=1;i<keyY.length;i++)if(y<=keyY[i]){const a=keyY[i-1],b=keyY[i];return keyM[i-1]+(keyM[i]-keyM[i-1])*((y-a)/(b-a||1))}return keyM[keyM.length-1]};
 const set=y=>{world.style.transform=`translateY(${LY+8-y}px)`;dc.textContent=fmt(mAt(y))+' m'};set(30);
@@ -225,15 +236,15 @@ const bubbles=n=>{for(let i=0;i<n;i++){const b=document.createElement('i');b.cla
 (async()=>{if(!ans){await wait(250);finish();return}
 ping();bubbles(6);await wait(500);
 let y=30;for(let j=1;j<=r.ti;j++){const by=TOP+j*BH;await tween(y,by,520+j*150,ease);y=by;blip(j);lure.classList.remove('tug');void lure.offsetWidth;lure.classList.add('tug');await wait(320+j*140)}
-const fy=TOP+r.ti*BH+BH*.55;await tween(y,fy,700+r.ti*80,easeOut);set(fy);$('#ly'+r.ti)?.classList.add('hit');if(r.ti===5)lure.classList.add('glow');finale(r.ti);bubbles(r.ti>=4?14:5);finish()})();
-function finish(){aby.onclick=null;const vd=$('#vd');vd.innerHTML=ans?`<b style="color:${t.c}">${t.n}</b><span>+${t.p} pontos · +${fmt(t.p*15)} m</span>`:`<b>${code===-2?'Acabou o ar':'Pulou'}</b><span>Nenhum ponto nesta pergunta</span>`;vd.classList.add('on');$('.skiphint').textContent='';
+const fy=TOP+r.ti*BH+BH*.55;await tween(y,fy,700+r.ti*80,easeOut);set(fy);$('#ly'+r.ti)?.classList.add('hit');if(r.ti>=5)lure.classList.add('glow');finale(r.ti);bubbles(r.ti>=4?14:5);finish()})();
+function finish(){aby.onclick=null;const vd=$('#vd');vd.innerHTML=ans?`<b style="color:${t.c}">${t.n}</b><span>+${t.p} pontos · +${fmt(t.p*MPP)} m</span>`:`<b>${code===-2?'Acabou o ar':'Pulou'}</b><span>Nenhum ponto nesta pergunta</span>`;vd.classList.add('on');$('.skiphint').textContent='';
 const tops=top3(cur),dc2=deepCut(cur,ans&&ans.k),after=$('#after');
-after.innerHTML=`${ans?`<p class="small">${r.pct<.01?'Menos de 0,01%':'Cerca de '+fmtPct(r.pct)} das respostas${r.C?`, contando ${r.C} ${r.C===1?'resposta de jogador':'respostas de jogadores'} e a estimativa inicial`:', pela estimativa inicial'}.${ans.w===0?' Essa nem estava na nossa lista.':''}</p>`:''}<p class="small">Mais comuns: ${tops.map(esc).join(' · ')}</p>${dc2?`<p class="small">Uma resposta abissal seria: <b style="color:var(--glow)">${esc(dc2)}</b></p>`:''}<div class="row"><button class="btn" id="nx">${last?'Ver meu mergulho':mode==='daily'?'Próxima pergunta':'Outra pergunta'}</button>${mode==='practice'?'<button class="ghost" id="bk">Voltar</button>':''}</div>`;
+after.innerHTML=`${ans?`<p class="small">Raridade estimada: ${RD[Math.min(6,Math.max(0,(ans.r||4)-1))]}.${r.C?` ${r.n} de ${r.C} ${r.C===1?'jogador deu':'jogadores deram'} essa resposta.`:''}${ans.extra?' Essa nem estava na nossa lista.':''}</p>`:''}<p class="small">Mais comuns: ${tops.map(esc).join(' · ')}</p>${dc2?`<p class="small">Uma resposta abissal seria: <b style="color:var(--glow)">${esc(dc2)}</b></p>`:''}<div class="row"><button class="btn" id="nx">${last?'Ver meu mergulho':mode==='daily'?'Próxima pergunta':'Outra pergunta'}</button>${mode==='practice'?'<button class="ghost" id="bk">Voltar</button>':''}</div>`;
 requestAnimationFrame(()=>after.classList.add('on'));gauge();$('#nx').onclick=()=>{audio();last?screenDone():next()};$('#nx').focus();const bk=$('#bk');if(bk)bk.onclick=screenIntro}}
-function shareText(){return `Abissal ${today.slice(8)}/${today.slice(5,7)} · ${fmt(me.sc*15)} m\n${me.tt.map(t=>t<0?'⬛':TIERS[t].sq).join('')}\n${location.origin+location.pathname}`}
-function screenDone(){const m=me.sc*15;stage.innerHTML=`<div class="meta"><span>Mergulho de hoje concluído</span><span>${me.sc} pontos</span></div><div class="big">${fmt(m)} m</div><p class="your">Você chegou à ${zoneOf(m).toLowerCase()}.</p><table class="stack"><thead><tr><th>Pergunta</th><th>Sua resposta</th><th>Nível</th><th style="text-align:right">Pontos</th></tr></thead><tbody>${DAILY.map((b,k)=>{const P=BANK[b],t=me.tt[k];return `<tr><td>${esc(P.q)}</td><td>${me.ans[k]?esc(me.ans[k]):'—'}</td><td style="color:${t>=0?TIERS[t].c:'inherit'}">${t>=0?TIERS[t].n:'Sem resposta'}</td><td class="n">${me.pts[k]??0}</td></tr>`}).join('')}</tbody></table><pre id="sh">${esc(shareText())}</pre><div class="row"><button class="btn" id="cp">Copiar resultado</button><button class="ghost" id="pr">Treino livre</button></div><p class="small">Novas perguntas à meia-noite.</p>`;
+function shareText(){return `Abissal ${today.slice(8)}/${today.slice(5,7)} · ${fmt(me.sc*MPP)} m\n${me.tt.map(t=>t<0?'⬛':TIERS[t].sq).join('')}\n${location.origin+location.pathname}`}
+function screenDone(){const m=me.sc*MPP;stage.innerHTML=`<div class="meta"><span>Mergulho de hoje concluído</span><span>${me.sc} pontos</span></div><div class="big">${fmt(m)} m</div><p class="your">Você chegou à ${zoneOf(m).toLowerCase()}.</p><table class="stack"><thead><tr><th>Pergunta</th><th>Sua resposta</th><th>Nível</th><th style="text-align:right">Pontos</th></tr></thead><tbody>${DAILY.map((b,k)=>{const P=BANK[b],t=me.tt[k];return `<tr><td>${esc(P.q)}</td><td>${me.ans[k]?esc(me.ans[k]):'—'}</td><td style="color:${t>=0?TIERS[t].c:'inherit'}">${t>=0?TIERS[t].n:'Sem resposta'}</td><td class="n">${me.pts[k]??0}</td></tr>`}).join('')}</tbody></table><pre id="sh">${esc(shareText())}</pre><div class="row"><button class="btn" id="cp">Copiar resultado</button><button class="ghost" id="pr">Treino livre</button></div><p class="small">Novas perguntas à meia-noite.</p>`;
 $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(shareText());$('#cp').textContent='Copiado'}catch(e){$('#cp').textContent='Selecione o texto acima'}};$('#pr').onclick=()=>{audio();practice()};gauge();board()}
-async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('span');a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;const b=document.createElement('span');b.textContent=fmt(o.score*15)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
+async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('span');a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;const b=document.createElement('span');b.textContent=fmt(o.score*MPP)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
 $('#tiers').innerHTML=TIERS.map(t=>`<li>${fishSvg(t)}<span><b style="color:${t.c}">${t.n}</b><br><span class="small">${t.d}</span></span><span class="p">${t.p} pts</span></li>`).join('');
 buildCol();gauge();
 function loadLocal(){try{const s=JSON.parse(localStorage.getItem('abissal-me')||'null');if(s)me=Object.assign(blank(),s)}catch(e){}}

@@ -76,6 +76,26 @@ Test it by typing an answer that is not on any list, like `jambo-rosa` for "Uma 
 
 The review page has four tabs: **Juiz aceitou**, **Juiz recusou**, **Approved** and **Rejected**. Your decision overrides the judge's for every future player. You can also fix the saved name before approving.
 
+## How rarity works
+Every built-in answer has an obscurity rating from 1 (obvious) to 7 (extremely obscure), stored in `gen/ratings.json` and baked into `site/prompts.json` (`Name/alias#rating`).
+
+| Rating | Tier | Points |
+|---|---|---|
+| 1 | Sardinha | 10 |
+| 2 | Baiacu | 25 |
+| 3 | Polvo | 45 |
+| 4 | Arraia | 65 |
+| 5 | Lula-gigante | 85 |
+| 6 | Peixe-abissal | 100 |
+| 7 | Um em um milhão | 150 |
+
+- **Um em um milhão:** at most 2 predefined answers per prompt, its two most obscure (rated 6 or 7), plus any off-list answer the judge rates 7.
+- **Off-list answers:** the judge also rates them, so a common answer that was missing from the list doesn't become abissal.
+- **Players only make it harder:** once a prompt has 10+ answers, an answer many players give is capped at a lower tier, and a one-in-a-million answer given by 2+ players drops to Peixe-abissal.
+- **Depth:** 10 m per point; a perfect day (7 × 150) reaches 10,500 m.
+
+**Re-rating after editing the lists:** deploy `supabase/functions/rate`, then in the SQL Editor insert a token into `rating_jobs` and call the function once with `net.http_post` (body `{"token": "...", "i": 0}`). It works through every list in batches of 100, paced for the Gemini free tier, and writes to `public.ratings`. Export the ratings into `gen/ratings.json` and run `python gen/gen.py`.
+
 ## Maintenance
 - **Add answers or prompts:** edit the lists in `gen/data_*.py` and run `python gen/gen.py`. That rewrites `site/prompts.json`; then push. In a list, `/` separates aliases (`Mexerica/Tangerina`) and a trailing `?` drops an entry.
 - **Move reviewed answers into the lists:** use **Copiar aprovadas (JSON)** on the review page, then add the names to `gen/`.
