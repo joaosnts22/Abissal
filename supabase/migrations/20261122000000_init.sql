@@ -39,8 +39,8 @@ create table public.dives (
 create index dives_day_score on public.dives (day, score desc);
 
 -- Answers that were not on the built-in lists. Filled only by the judge function.
---   auto_ok / auto_no : Claude's decision, waiting for your review
---   approved / rejected : your final decision (overrides Claude)
+--   auto_ok / auto_no : the judge's decision, waiting for your review
+--   approved / rejected : your final decision (overrides the judge)
 create table public.extras (
   prompt_id     text not null,
   answer_key    text not null,
@@ -54,7 +54,7 @@ create table public.extras (
 );
 create index extras_status on public.extras (status, created_at desc);
 
--- Each call to Claude, for the per-player daily limit
+-- Each call to the judge model, for the per-player daily limit
 create table public.judge_log (
   id          bigint generated always as identity primary key,
   player_id   uuid not null,

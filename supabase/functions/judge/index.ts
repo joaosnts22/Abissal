@@ -1,11 +1,11 @@
 // Abissal judge: decides whether an answer that is NOT on the built-in lists is valid.
-// Runs on Supabase Edge Functions. The Claude API key lives only here, never in the browser.
+// Runs on Supabase Edge Functions. The Gemini API key lives only here, never in the browser.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
-const CLAUDE_MODEL = Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
 const PROMPTS_URL = Deno.env.get("PROMPTS_URL") ?? "https://joaosnts22.github.io/abissal/prompts.json";
-const DAILY_LIMIT = Number(Deno.env.get("JUDGE_DAILY_LIMIT") ?? "40"); // Claude calls per player per 24h
+const DAILY_LIMIT = Number(Deno.env.get("JUDGE_DAILY_LIMIT") ?? "40"); // model calls per player per 24h
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -49,7 +49,7 @@ async function getPrompt(id: string): Promise<Prompt | null> {
   return promptCache.byId.get(id) ?? null;
 }
 
-async function askClaude(p: Prompt, answer: string): Promise<{ valid: boolean; name: string }> {
+async function askModel(p: Prompt, answer: string): Promise<{ valid: boolean; name: string }> {
   const examples = p.a.split(";").slice(0, 14).map((x) => x.split("/")[0]).join(", ");
   const extra = p.l
     ? `\nRegra extra: precisa ser uma palavra real do português, com 3 ou mais letras, usando só as letras de "${p.l.toUpperCase()}" (cada letra no máximo quantas vezes aparece).`
@@ -62,20 +62,21 @@ async function askClaude(p: Prompt, answer: string): Promise<{ valid: boolean; n
     `Recuse se for errada, inventada, genérica demais (por exemplo "fruta" para "uma fruta"), uma piada, ou se não se encaixar na pergunta.\n` +
     `Responda só com JSON: {"valid": true ou false, "name": "nome canônico curto em português, com acentos"}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 120, messages: [{ role: "user", content: prompt }] }),
+    headers: { "x-goog-api-key": GEMINI_API_KEY, "content-type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 1024, responseMimeType: "application/json" },
+    }),
   });
-  if (!res.ok) throw new Error(`Claude API ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  const text: string = (data.content ?? []).filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("");
+  const parts = data?.candidates?.[0]?.content?.parts ?? [];
+  const text: string = parts.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join("");
   const s = text.indexOf("{"), e = text.lastIndexOf("}");
-  if (s < 0 || e < s) throw new Error("No JSON in Claude reply: " + text);
+  if (s < 0 || e < s) throw new Error("No JSON in model reply: " + text);
   const parsed = JSON.parse(text.slice(s, e + 1));
   return { valid: parsed.valid === true, name: String(parsed.name || answer).trim().slice(0, 60) || answer };
 }
@@ -99,19 +100,19 @@ Deno.serve(async (req) => {
     if (!p) return json({ error: "unknown_prompt" }, 400);
     if (p.l && !lettersOk(answer, p.l)) return json({ valid: false });
 
-    // Already decided before (by Claude or by you)? Reuse it: no cost, consistent for everyone.
+    // Already decided before (by the judge or by you)? Reuse it: no cost, consistent for everyone.
     const { data: known } = await admin.from("extras").select("name,status")
       .eq("prompt_id", promptId).eq("answer_key", k).maybeSingle();
     if (known) return json({ valid: known.status === "auto_ok" || known.status === "approved", name: known.name, cached: true });
 
-    // Per-player limit on Claude calls
+    // Per-player limit on model calls
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { count } = await admin.from("judge_log").select("id", { count: "exact", head: true })
       .eq("player_id", user.id).gte("created_at", since);
     if ((count ?? 0) >= DAILY_LIMIT) return json({ error: "rate_limited" }, 429);
     await admin.from("judge_log").insert({ player_id: user.id });
 
-    const verdict = await askClaude(p, answer);
+    const verdict = await askModel(p, answer);
     const status = verdict.valid ? "auto_ok" : "auto_no";
     const rows = [{ prompt_id: promptId, answer_key: k, name: verdict.name, status, raw_answer: answer, first_player: user.id }];
     const nk = key(verdict.name);

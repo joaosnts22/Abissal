@@ -34,7 +34,7 @@ pre{background:#031017;padding:12px;border-radius:12px;overflow-x:auto;font-size
 </style></head><body>
 <div class="band">
 <h1>Revisão de respostas</h1>
-<p class="small">Respostas que não estavam nas listas e passaram pelo juiz. Aprove ou rejeite: sua decisão vale mais que a do Claude e é usada para todos os jogadores.</p>
+<p class="small">Respostas que não estavam nas listas e passaram pelo juiz. Aprove ou rejeite: sua decisão vale mais que a do juiz automático e é usada para todos os jogadores.</p>
 <div id="app" class="card" style="margin-top:18px"><p class="small">Carregando…</p></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
@@ -45,7 +45,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STOP=new Set('o a os as um uma de do da dos das e'.split(' '));
 const key=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(w=>w&&!STOP.has(w)).map(w=>w.length>3?w.replace(/s$/,''):w).join('');
-const TABS=[['auto_ok','Claude aceitou'],['auto_no','Claude recusou'],['approved','Aprovadas'],['rejected','Rejeitadas']];
+const TABS=[['auto_ok','Juiz aceitou'],['auto_no','Juiz recusou'],['approved','Aprovadas'],['rejected','Rejeitadas']];
 const app=$('#app');let sb,Q={},tab='auto_ok',rows=[];
 const cfg=window.ABISSAL_CONFIG||{};
 async function init(){
