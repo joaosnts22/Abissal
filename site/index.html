@@ -54,6 +54,7 @@ button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
 .layer .tag span{font-weight:500;color:var(--mute);font-size:13px}
 .layer .deco{position:absolute;opacity:.22}
 .layer.hit{box-shadow:inset 0 0 0 2px var(--glow)}
+.fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:50}
 .layer.star{background-image:radial-gradient(#fff 1.2px,transparent 1.8px),radial-gradient(rgba(242,230,255,.75) 1px,transparent 1.6px),radial-gradient(circle at 50% 60%,rgba(170,120,255,.18),transparent 70%);background-size:37px 41px,59px 67px,100% 100%}
 .layer.star .tag b{text-shadow:0 0 12px rgba(242,230,255,.9)}
 .line{position:absolute;left:50%;top:0;width:2px;height:118px;margin-left:-1px;background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.75))}
@@ -218,6 +219,18 @@ catch(e){busy=false;$('#send').disabled=false;resumeTimer();reject(e&&e.code==='
 function resolve(ans,code){if(locked)return;locked=true;clearInterval(timer);let r=null,t=null,pts=0;if(ans){r=rarity(cur,ans);t=TIERS[r.ti];pts=t.p}
 if(mode==='daily'){me.pts.push(pts);me.ans.push(ans?ans.name:null);me.tt.push(ans?r.ti:-1);me.i++;me.sc+=pts;me.done=me.i>=7;save(ans)}
 reveal(ans,r,t,code)}
+/* ---------- fireworks for "um em um milhão" (under 1 s, whole page) ---------- */
+function fireworks(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+const cv=document.createElement('canvas');cv.className='fx';const dpr=Math.min(2,devicePixelRatio||1);const W=innerWidth,H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;document.body.append(cv);
+const g=cv.getContext('2d');g.scale(dpr,dpr);const cols=['#ffe066','#f2e6ff','#ff7a59','#7fd6c9','#ff86a8','#79acff'];const parts=[];
+const bursts=W<600?4:6;for(let b=0;b<bursts;b++){const cx=W*(.12+.76*Math.random()),cy=H*(.12+.5*Math.random()),c=cols[b%cols.length],n=44,delay=b*70;
+for(let i=0;i<n;i++){const a=i/n*Math.PI*2+Math.random()*.2,v=2.6+Math.random()*3.4;parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c,delay})}}
+const t0=performance.now(),DUR=900;
+const step=now=>{const t=now-t0;g.clearRect(0,0,W,H);
+for(const p of parts){const lt=t-p.delay;if(lt<0)continue;const k=Math.min(1,lt/(DUR-p.delay));const f=lt/16;
+const x=p.x+p.vx*f*.95,y=p.y+p.vy*f*.95+.018*f*f;g.globalAlpha=Math.max(0,1-k);g.fillStyle=p.c;g.beginPath();g.arc(x,y,3.2*(1-k*.5),0,7);g.fill()}
+if(t<DUR)requestAnimationFrame(step);else cv.remove()};requestAnimationFrame(step);
+tone(1568,.12,'triangle',.04);tone(2093,.15,'triangle',.035,.12);tone(2637,.2,'triangle',.03,.24)}
 /* ---------- the dive ---------- */
 const BH=210,TOP=70,LY=120;
 function reveal(ans,r,t,code){const last=mode==='daily'&&me.done;
@@ -236,7 +249,7 @@ const bubbles=n=>{for(let i=0;i<n;i++){const b=document.createElement('i');b.cla
 (async()=>{if(!ans){await wait(250);finish();return}
 ping();bubbles(6);await wait(500);
 let y=30;for(let j=1;j<=r.ti;j++){const by=TOP+j*BH;await tween(y,by,520+j*150,ease);y=by;blip(j);lure.classList.remove('tug');void lure.offsetWidth;lure.classList.add('tug');await wait(320+j*140)}
-const fy=TOP+r.ti*BH+BH*.55;await tween(y,fy,700+r.ti*80,easeOut);set(fy);$('#ly'+r.ti)?.classList.add('hit');if(r.ti>=5)lure.classList.add('glow');finale(r.ti);bubbles(r.ti>=4?14:5);finish()})();
+const fy=TOP+r.ti*BH+BH*.55;await tween(y,fy,700+r.ti*80,easeOut);set(fy);$('#ly'+r.ti)?.classList.add('hit');if(r.ti>=5)lure.classList.add('glow');finale(r.ti);bubbles(r.ti>=4?14:5);if(r.ti===6)fireworks();finish()})();
 function finish(){aby.onclick=null;const vd=$('#vd');vd.innerHTML=ans?`<b style="color:${t.c}">${t.n}</b><span>+${t.p} pontos · +${fmt(t.p*MPP)} m</span>`:`<b>${code===-2?'Acabou o ar':'Pulou'}</b><span>Nenhum ponto nesta pergunta</span>`;vd.classList.add('on');$('.skiphint').textContent='';
 const tops=top3(cur),dc2=deepCut(cur,ans&&ans.k),after=$('#after');
 after.innerHTML=`${ans?`<p class="small">Raridade estimada: ${RD[Math.min(6,Math.max(0,(ans.r||4)-1))]}.${r.C?` ${r.n} de ${r.C} ${r.C===1?'jogador deu':'jogadores deram'} essa resposta.`:''}${ans.extra?' Essa nem estava na nossa lista.':''}</p>`:''}<p class="small">Mais comuns: ${tops.map(esc).join(' · ')}</p>${dc2?`<p class="small">Uma resposta abissal seria: <b style="color:var(--glow)">${esc(dc2)}</b></p>`:''}<div class="row"><button class="btn" id="nx">${last?'Ver meu mergulho':mode==='daily'?'Próxima pergunta':'Outra pergunta'}</button>${mode==='practice'?'<button class="ghost" id="bk">Voltar</button>':''}</div>`;
