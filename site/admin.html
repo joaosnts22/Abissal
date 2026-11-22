@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Abissal · Revisão</title><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a quiet back-office tool for the game's owner
+   IDEA: a moderation queue, one row per answer, decide fast
+   PICTURE: the queue table itself, with counts per tab
+   COLOUR and TYPE: the game's deep teal at night, coral for reject, glow yellow for approve; Rubik
+   LAYOUT: single column, tabs on top, table below; rows stack on phones */
+:root{color-scheme:dark;--bg:#04141c;--card:#072431;--ink:#eaf7f7;--mute:#9cc0c4;--line:rgba(234,247,247,.14);--coral:#ff7a59;--glow:#ffe066}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Rubik,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,4vw,44px) max(5vw,16px);max-width:1180px;margin:0 auto}
+h1{font-size:clamp(30px,5vw,40px);line-height:1.05;margin:0 0 6px}
+p{margin:6px 0}.small{font-size:14px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+form,.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input{flex:1 1 220px;height:48px;border-radius:12px;border:1.5px solid var(--line);background:#031017;color:var(--ink);font:16px Rubik,sans-serif;padding:0 14px}
+input:focus{outline:none;border-color:var(--glow)}
+button{height:44px;border-radius:12px;border:0;padding:0 16px;font:700 15px Rubik,sans-serif;cursor:pointer}
+.ok{background:var(--glow);color:#241c00}.no{background:var(--coral);color:#22100a}.gh{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--mute);font-weight:500;font-size:13px}
+td input{height:40px;flex:none;width:100%}
+td.act{white-space:nowrap}
+code{background:#031017;padding:2px 6px;border-radius:6px;overflow-wrap:anywhere}
+pre{background:#031017;padding:12px;border-radius:12px;overflow-x:auto;font-size:13px}
+@media(max-width:700px){thead{display:none}tr{display:grid;padding:10px 0;border-bottom:1px solid var(--line)}td{border:0;padding:4px 0}td.act{white-space:normal}}
+</style></head><body>
+<div class="band">
+<h1>Revisão de respostas</h1>
+<p class="small">Respostas que não estavam nas listas e passaram pelo juiz. Aprove ou rejeite: sua decisão vale mais que a do Claude e é usada para todos os jogadores.</p>
+<div id="app" class="card" style="margin-top:18px"><p class="small">Carregando…</p></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STOP=new Set('o a os as um uma de do da dos das e'.split(' '));
+const key=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(w=>w&&!STOP.has(w)).map(w=>w.length>3?w.replace(/s$/,''):w).join('');
+const TABS=[['auto_ok','Claude aceitou'],['auto_no','Claude recusou'],['approved','Aprovadas'],['rejected','Rejeitadas']];
+const app=$('#app');let sb,Q={},tab='auto_ok',rows=[];
+const cfg=window.ABISSAL_CONFIG||{};
+async function init(){
+ if(!cfg.supabaseUrl||!window.supabase){app.innerHTML='<p>Preencha o <code>config.js</code> primeiro.</p>';return}
+ sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{storageKey:'abissal-admin',flowType:'implicit'}});
+ try{(await (await fetch('prompts.json')).json()).forEach(p=>Q[p.id]=p.q)}catch(e){}
+ const{data:{session}}=await sb.auth.getSession();
+ if(!session||session.user.is_anonymous)return loginView();
+ const{data:isAdmin}=await sb.rpc('is_admin');
+ if(!isAdmin){app.innerHTML=`<p>Você entrou como <b>${esc(session.user.email)}</b>, mas ainda não é administrador.</p><p class="small">No Supabase, abra o SQL Editor e rode:</p><pre>insert into public.admins (user_id) values ('${esc(session.user.id)}');</pre><div class="row"><button class="gh" id="re">Já rodei, recarregar</button><button class="gh" id="out">Sair</button></div>`;$('#re').onclick=()=>location.reload();$('#out').onclick=logout;return}
+ queueView()}
+function loginView(){app.innerHTML=`<p>Entre com o seu e-mail. Você vai receber um link de acesso.</p><form id="lf"><input id="em" type="email" required placeholder="seu@email.com" aria-label="E-mail"><button class="ok">Enviar link</button></form><p class="small" id="lm"></p>`;
+ $('#lf').addEventListener('submit',async e=>{e.preventDefault();const email=$('#em').value.trim();$('#lm').textContent='Enviando…';const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0],shouldCreateUser:true}});$('#lm').textContent=error?'Erro: '+error.message:'Pronto. Abra o link no e-mail neste mesmo navegador.'})}
+async function logout(){await sb.auth.signOut();location.reload()}
+async function load(){const{data,error}=await sb.from('extras').select('*').eq('status',tab).order('created_at',{ascending:false}).limit(500);rows=error?[]:data;if(error)console.error(error)}
+async function counts(){const out={};await Promise.all(TABS.map(async([s])=>{const{count}=await sb.from('extras').select('answer_key',{count:'exact',head:true}).eq('status',s);out[s]=count||0}));return out}
+async function queueView(){await load();const n=await counts();
+ app.innerHTML=`<div class="row" style="justify-content:space-between"><div class="tabs" role="tablist">${TABS.map(([s,l])=>`<button role="tab" class="gh" data-s="${s}" aria-selected="${s===tab}">${l} (${n[s]})</button>`).join('')}</div><div class="row"><button class="gh" id="exp">Copiar aprovadas (JSON)</button><button class="gh" id="out">Sair</button></div></div>
+ ${rows.length?`<table><thead><tr><th>Pergunta</th><th>O jogador digitou</th><th>Nome que fica salvo</th><th>Quando</th><th></th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${esc(Q[r.prompt_id]||r.prompt_id)}</td><td>${esc(r.raw_answer||'')}</td><td><input data-i="${i}" value="${esc(r.name)}" aria-label="Nome canônico"></td><td class="small">${new Date(r.created_at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</td><td class="act">${tab!=='approved'?`<button class="ok" data-a="approved" data-i="${i}">Aprovar</button> `:''}${tab!=='rejected'?`<button class="no" data-a="rejected" data-i="${i}">Rejeitar</button>`:''}</td></tr>`).join('')}</tbody></table>`:`<p class="small">Nada aqui por enquanto.</p>`}<p class="small" id="am"></p>`;
+ app.querySelectorAll('[role=tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.s;queueView()});
+ app.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>decide(+b.dataset.i,b.dataset.a));
+ $('#out').onclick=logout;$('#exp').onclick=exportApproved}
+async function decide(i,status){const r=rows[i];const name=(app.querySelector(`input[data-i="${i}"]`).value||r.name).trim().slice(0,60);
+ const{error}=await sb.from('extras').update({status,name,reviewed_at:new Date().toISOString()}).eq('prompt_id',r.prompt_id).eq('answer_key',r.answer_key);
+ if(error){$('#am').textContent='Erro: '+error.message;return}queueView()}
+async function exportApproved(){const{data}=await sb.from('extras').select('prompt_id,name').in('status',['approved','auto_ok']).order('prompt_id');const g={};for(const r of data||[])(g[r.prompt_id]??=[]).push(r.name);
+ const txt=JSON.stringify(g,null,1);try{await navigator.clipboard.writeText(txt);$('#am').textContent='Copiado. Adicione os nomes em gen/data_*.py e rode gen/gen.py para entrar nas listas fixas.'}catch(e){$('#am').innerHTML='<pre>'+esc(txt)+'</pre>'}}
+init();
+}
+</script>
+</body></html>

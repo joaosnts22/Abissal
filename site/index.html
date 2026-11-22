@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Abissal: o jogo diário em que a resposta óbvia perde. Quanto mais rara a resposta, mais fundo você mergulha.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%23062a37%22/%3E%3Cellipse cx=%2250%22 cy=%2255%22 rx=%2230%22 ry=%2216%22 fill=%22%23ffe066%22/%3E%3C/svg%3E">
+<title>Abissal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a playful daily game show at the bottom of the sea
+   IDEA: a fishing line dropped into the abyss; every answer is a lure that sinks as deep as it is rare
+   PICTURE: the dive window, a water column of six rarity layers the lure falls through, plus the side depth gauge of real ocean zones
+   COLOUR and TYPE: sunlit teal fading to abyssal black, foam white, coral and lantern-fish yellow; Rubik
+   LAYOUT: card left, depth column right; on phones the column becomes a slim depth strip under the card */
+:root{color-scheme:dark;--sea:#0b4a5c;--deep:#03121a;--ink:#eaf7f7;--mute:#9cc0c4;--coral:#ff7a59;--glow:#ffe066;--line:rgba(234,247,247,.15);--card:rgba(3,22,30,.62)}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:linear-gradient(180deg,#12708a 0,var(--sea) 320px,#062a37 760px,var(--deep) 1300px);color:var(--ink);font:16px/1.55 Rubik,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+.band{padding:clamp(22px,4vw,52px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+header .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+header h1{font-size:clamp(38px,6vw,52px);line-height:1.05;margin:0;font-weight:800}
+header p{margin:8px 0 0;color:#d4eef0;max-width:62ch;text-wrap:balance}
+#net{font-size:14px;color:var(--mute);margin-top:10px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:24px;align-items:start;padding-top:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:clamp(18px,3.2vw,34px);min-height:440px;backdrop-filter:blur(6px)}
+.meta{display:flex;justify-content:space-between;gap:12px;}.meta span:last-child{white-space:nowrap}.meta{color:var(--mute);font-size:14px;font-weight:500}
+#secs{font-variant-numeric:tabular-nums;color:var(--glow);font-weight:700}
+.q{font-size:clamp(26px,3.6vw,38px);line-height:1.1;margin:14px 0 22px;font-weight:700;text-wrap:balance}
+form{display:flex;gap:10px;flex-wrap:wrap}
+input{flex:1 1 220px;height:54px;border-radius:14px;border:1.5px solid var(--line);background:#041c25;color:var(--ink);font:500 17px Rubik,sans-serif;padding:0 16px;outline:none}
+input:focus{border-color:var(--glow);box-shadow:0 0 0 3px rgba(255,224,102,.25)}
+.btn,.ghost{height:54px;min-width:44px;border-radius:14px;font:700 16px Rubik,sans-serif;padding:0 22px;cursor:pointer;border:0}
+.btn{background:var(--coral);color:#22100a}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:wait}
+.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}.ghost:hover{border-color:var(--mute)}
+.icon{height:44px;padding:0 14px;font-size:14px}
+button:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+.tbar{height:8px;border-radius:8px;background:rgba(255,255,255,.08);margin:18px 0 10px;overflow:hidden}
+.tbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--coral),var(--glow));border-radius:8px}
+.tbar.paused i{background:var(--mute)}
+.msg{min-height:26px;margin:6px 0 14px;color:#ffd0c2}.msg.ok{color:var(--mute)}
+.shake{animation:sh .3s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.small{font-size:14px;color:var(--mute)}
+.your{font-size:17px;margin:4px 0 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.big{font-size:clamp(44px,7vw,52px);font-weight:800;line-height:1.05;color:var(--glow);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* dive window */
+.abyss{position:relative;height:340px;border-radius:16px;overflow:hidden;margin:14px 0 6px;border:1px solid var(--line);cursor:pointer;background:linear-gradient(180deg,#d7f2f7 0,#9fe0ea 120px,#020b10 121px);user-select:none}
+.world{position:absolute;left:0;right:0;top:0;will-change:transform}
+.surf{position:absolute;left:0;right:0;top:0;height:70px;background:linear-gradient(180deg,#7fd8e6,#3fb6c9)}
+.surf::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:12px;background:radial-gradient(circle at 10px -2px,transparent 9px,#3fb6c9 10px) repeat-x;background-size:20px 12px}
+.layer{position:absolute;left:0;right:0;border-top:1px dashed rgba(234,247,247,.25);background-image:radial-gradient(rgba(255,255,255,.18) 1px,transparent 1.5px),radial-gradient(rgba(255,255,255,.1) 1px,transparent 1.5px);background-size:47px 53px,71px 61px}
+.layer .tag{position:absolute;left:12px;top:10px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.layer .tag svg{width:40px;height:24px}
+.layer .tag span{font-weight:500;color:var(--mute);font-size:13px}
+.layer .deco{position:absolute;opacity:.22}
+.layer.hit{box-shadow:inset 0 0 0 2px var(--glow)}
+.line{position:absolute;left:50%;top:0;width:2px;height:118px;margin-left:-1px;background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.75))}
+.lure{position:absolute;left:50%;top:112px;width:38px;height:54px;margin-left:-19px;transform-origin:50% 0}
+.lure.tug{animation:tug .35s ease-in-out}@keyframes tug{30%{transform:translateY(-7px) rotate(-6deg)}70%{transform:translateY(2px) rotate(4deg)}}
+.lure.glow svg{filter:drop-shadow(0 0 14px rgba(255,224,102,.9))}
+.depth{position:absolute;right:12px;top:10px;font-weight:800;font-size:22px;color:var(--glow);font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.skiphint{position:absolute;right:12px;bottom:8px;font-size:12px;color:rgba(234,247,247,.55)}
+.bub{position:absolute;bottom:-10px;width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);animation:rise 2.4s linear forwards}
+@keyframes rise{to{transform:translateY(-360px) translateX(10px);opacity:0}}
+.verdict{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;text-align:center;transition:transform .35s cubic-bezier(.2,1.6,.4,1),opacity .2s;pointer-events:none;width:92%}
+.verdict.on{transform:translate(-50%,-50%) scale(1);opacity:1}
+.verdict b{display:block;font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.05;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+.verdict span{font-weight:700;color:var(--glow);font-size:18px;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.after{opacity:0;transition:opacity .4s}.after.on{opacity:1}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:15px}
+td,th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--mute);font-size:13px}
+td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+pre{white-space:pre-wrap;background:#041c25;border-radius:12px;padding:12px 14px;font:15px/1.5 Rubik,sans-serif;margin:16px 0 0}
+.gauge{position:sticky;top:16px}
+.col{position:relative;height:560px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,#3fb6c9 0,#13708a 12%,#0a3f50 32%,#06222e 60%,#020b10 100%);overflow:hidden}
+.z{position:absolute;left:0;right:0;border-top:1px dashed rgba(234,247,247,.28);padding:3px 10px;font-size:13px;line-height:1.25;color:#d9f1f3}
+.z b{display:block;font-weight:700;font-variant-numeric:tabular-nums}.z.end{border-top:2px solid var(--coral)}
+.diver{position:absolute;right:10px;transform:translateY(-50%);transition:top 1.2s cubic-bezier(.3,.7,.2,1);display:flex;align-items:center;gap:6px;font-weight:800;color:var(--glow);font-size:14px;white-space:nowrap}
+.diver i{width:16px;height:16px;border-radius:50%;background:var(--glow);box-shadow:0 0 16px 4px rgba(255,224,102,.6)}
+.mini{display:none}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding-top:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px}
+.panel h3{margin:0 0 8px;font-size:20px}
+.tiers{list-style:none;margin:0;padding:0}
+.tiers li{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.tiers svg{width:42px;height:26px}.tiers span.p{font-weight:700;white-space:nowrap}
+ol.board{margin:0;padding:0;list-style:none}
+ol.board li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+ol.board li.me{color:var(--glow);font-weight:700}
+footer{color:var(--mute);font-size:13px;padding-top:0}
+@media(max-width:760px){.main,.lower{grid-template-columns:minmax(0,1fr)}.col{display:none}.gauge{position:static}.mini{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px}.mini b{color:var(--glow);font-size:20px;white-space:nowrap}.abyss{height:300px}}
+@media(prefers-reduced-motion:reduce){.diver{transition:none}.shake,.lure.tug,.bub{animation:none}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+</style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="fish" viewBox="0 0 120 70"><path d="M100 35 L120 16 L116 35 L120 54 Z" fill="currentColor" opacity=".75"/><ellipse cx="56" cy="35" rx="48" ry="24" fill="currentColor"/><path d="M20 35 Q56 50 96 35" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="4"/><path d="M40 13 Q60 4 72 13" fill="currentColor" opacity=".7"/><circle cx="26" cy="29" r="5" fill="#04141c"/><circle cx="24.5" cy="27.5" r="1.6" fill="#fff"/></symbol>
+<symbol id="lantern" viewBox="0 0 120 70"><path d="M30 14 Q22 -2 6 6" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="6" cy="6" r="5" fill="#ffe066"/><circle cx="6" cy="6" r="10" fill="#ffe066" opacity=".25"/></symbol>
+<symbol id="bait" viewBox="0 0 38 54"><path d="M19 0 V10" stroke="#dfe9ea" stroke-width="2"/><ellipse cx="19" cy="20" rx="9" ry="11" fill="#ff7a59"/><ellipse cx="16" cy="16" rx="3" ry="4" fill="#ffd2c4" opacity=".8"/><rect x="10" y="18" width="18" height="3" fill="#fff" opacity=".85"/><path d="M19 31 V42 Q19 50 12 49 Q7 48 8 42" fill="none" stroke="#dfe9ea" stroke-width="2.6" stroke-linecap="round"/><path d="M8 42 L5 45" stroke="#dfe9ea" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</defs></svg>
+<header class="band"><div class="wrap">
+<div class="top"><h1>Abissal</h1><button class="ghost icon" id="snd" aria-pressed="true">Som ligado</button></div>
+<p>Sete perguntas por dia, 25 segundos cada. Qualquer resposta certa vale, mas quanto menos gente pensar nela, mais fundo a sua isca vai.</p>
+<div id="net">Conectando ao placar…</div>
+</div></header>
+<section class="band main wrap">
+<div class="card" id="stage"><p class="small">Carregando as perguntas…</p></div>
+<aside class="gauge" aria-label="Profundidade do mergulho">
+<div class="col" id="col"></div>
+<div class="mini"><span id="mz">Superfície</span><b id="mm">0 m</b></div>
+</aside>
+</section>
+<section class="band lower wrap">
+<div class="panel"><h3>Como a raridade funciona</h3>
+<p class="small">Cada resposta é comparada com tudo que os outros mergulhadores já responderam para a mesma pergunta. Até juntar bastante gente, uma estimativa inicial de popularidade completa a conta. Se sua resposta não estiver na lista, um juiz automático (Claude) confere se ela vale. Cada ponto vale 15 m de profundidade.</p>
+<ul class="tiers" id="tiers"></ul></div>
+<div class="panel"><h3>Mergulhadores de hoje</h3><div id="board" class="small">Ninguém terminou o mergulho de hoje ainda.</div></div>
+</section>
+<footer class="band wrap" id="foot">As perguntas mudam à meia-noite, horário de Brasília. Grafias com ou sem acento, no plural e com um errinho de digitação também valem.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+{
+const TIERS=[
+{n:'Sardinha',min:15,p:10,c:'#b9d6de',sq:'⬜',d:'15% ou mais das respostas',bg:'#1a7f93'},
+{n:'Baiacu',min:8,p:25,c:'#7fd6c9',sq:'🟦',d:'de 8% a 15%',bg:'#126477'},
+{n:'Polvo',min:3,p:45,c:'#ffb86b',sq:'🟩',d:'de 3% a 8%',bg:'#0c4757'},
+{n:'Arraia',min:1,p:65,c:'#79acff',sq:'🟧',d:'de 1% a 3%',bg:'#08303c'},
+{n:'Lula-gigante',min:.25,p:85,c:'#ff86a8',sq:'🟪',d:'de 0,25% a 1%',bg:'#051c25'},
+{n:'Peixe-abissal',min:0,p:100,c:'#ffe066',sq:'🟨',d:'menos de 0,25%: quase ninguém',bg:'#020a0e'}];
+const ZONES=[[0,'Superfície'],[200,'Zona do crepúsculo'],[1000,'Zona da meia-noite'],[4000,'Zona abissal'],[6000,'Zona hadal'],[10994,'Fossa das Marianas']];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STOP=new Set('o a os as um uma de do da dos das e'.split(' '));
+const key=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(w=>w&&!STOP.has(w)).map(w=>w.length>3?w.replace(/s$/,''):w).join('');
+const lettersOk=(w,l)=>{const k=key(w);if(k.length<3)return false;const pool=[...key(l)];for(const ch of k){const i=pool.indexOf(ch);if(i<0)return false;pool.splice(i,1)}return true};
+const fmt=n=>Math.round(n).toLocaleString('pt-BR');
+const fmtPct=n=>n<.01?'menos de 0,01%':(n<1?n.toLocaleString('pt-BR',{maximumFractionDigits:2}):n.toLocaleString('pt-BR',{maximumFractionDigits:1}))+'%';
+const fishSvg=t=>`<svg viewBox="0 0 120 70" aria-hidden="true" style="color:${t?t.c:'#5d7d84'}"><use href="#fish"/>${t&&t.p===100?'<use href="#lantern"/>':''}</svg>`;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function build(r){const e=r.a.split(';').filter(Boolean).map((x,i)=>{const al=x.split('/');return{name:al[0],k:key(al[0]),keys:[...new Set(al.map(key))].filter(Boolean),w:20*Math.pow(.8,i)}});const idx=new Map();e.forEach((o,i)=>o.keys.forEach(k=>{if(!idx.has(k))idx.set(k,i)}));return{id:r.id,q:r.q,g:r.g,l:r.l||null,e,idx,W:e.reduce((s,o)=>s+o.w,0)}}
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+function fuzzy(k,keys){const tol=k.length>=9?2:k.length>=5?1:0;if(!tol)return null;let best=null,bd=9;for(const kk of keys){if(kk.length<4)continue;const d=lev(k,kk);if(d<=tol&&d<bd){bd=d;best=kk}}return best}
+const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+function rng(seed){let h=1779033703^seed.length;for(const ch of seed){h=Math.imul(h^ch.charCodeAt(0),3432918353);h=h<<13|h>>>19}return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return(h>>>0)/4294967296}}
+const blank=()=>({d:'',i:0,pts:[],ans:[],tt:[],sc:0,done:false});
+let BANK=[],DAILY=[],sb=null,uid=null,nickname='',online=false,judgeOK=true,canWrite=true,counts={},extras={},players=0,wq=Promise.resolve();
+let me=blank(),mode='daily',cur=null,timer=null,locked=false,left=25000,tEnd=0,checks=0,busy=false,countsReady=Promise.resolve();
+const stage=$('#stage');
+/* ---------- sound ---------- */
+let ac=null,soundOn=true;try{soundOn=localStorage.getItem('abissal-sound')!=='0'}catch(e){}
+function audio(){try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}}
+function tone(f,d=.1,type='sine',v=.07,when=0){if(!soundOn||!ac)return;try{const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
+const ping=()=>{tone(880,.6,'sine',.05);tone(660,.8,'sine',.03,.12)};
+const blip=j=>tone(300+j*90,.12,'triangle',.06);
+const finale=ti=>{const notes=[[392],[392,494],[392,494,587],[440,554,659],[440,554,659,880],[523,659,784,1047,1319]][ti];notes.forEach((f,i)=>tone(f,.5,'sine',.06,i*.09))};
+const sndBtn=$('#snd');const sndLabel=()=>{sndBtn.textContent=soundOn?'Som ligado':'Som desligado';sndBtn.setAttribute('aria-pressed',soundOn)};sndLabel();
+sndBtn.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem('abissal-sound',soundOn?'1':'0')}catch(e){}sndLabel();audio()};
+/* ---------- backend (Supabase) ---------- */
+async function loadCounts(ids){if(!online)return;try{const[{data:c},{data:x}]=await Promise.all([sb.rpc('get_counts',{p_ids:ids}),sb.rpc('get_extras',{p_ids:ids})]);for(const id of ids){counts[id]={};extras[id]=new Map()}for(const r of c||[])counts[r.prompt_id][r.answer_key]=r.n;for(const r of x||[])extras[r.prompt_id].set(r.answer_key,r.name)}catch(e){}}
+function save(ans){const local=JSON.parse(JSON.stringify(me));try{localStorage.setItem('abissal-me',JSON.stringify(local))}catch(e){}if(!online||!canWrite)return;
+const pid=cur.id;wq=wq.then(async()=>{if(ans){const{error}=await sb.from('answers').upsert({prompt_id:pid,player_id:uid,answer_key:ans.k.slice(0,80),answer_name:ans.name.slice(0,80),day:today,updated_at:new Date().toISOString()});if(error)throw error}
+const{error}=await sb.from('dives').upsert({player_id:uid,day:today,prompt_ids:DAILY.map(i=>BANK[i].id),answers:local.ans.map(a=>a||''),tiers:local.tt,points:local.pts,score:local.sc,done:local.done,updated_at:new Date().toISOString()});if(error)throw error}).catch(e=>{console.error(e);canWrite=false;status()})}
+async function loadMine(){const{data}=await sb.from('dives').select('*').eq('player_id',uid).eq('day',today).maybeSingle();if(!data)return;me={d:today,i:data.answers.length,ans:data.answers.map(a=>a||null),tt:data.tiers,pts:data.points,sc:data.score,done:data.done}}
+async function judge(P,v){const{data,error}=await sb.functions.invoke('judge',{body:{prompt_id:P.id,answer:v}});if(error){const st=error.context&&error.context.status;throw{code:st===429?'rate_limited':'error'}}if(!data||typeof data.valid!=='boolean')throw{code:'error'};return data}
+async function saveNick(n){nickname=n;try{localStorage.setItem('abissal-nick',n)}catch(e){}if(online){const{error}=await sb.from('players').upsert({id:uid,nickname:n});if(error)console.error(error)}}
+/* ---------- scoring ---------- */
+function rarity(P,ans){const c=counts[P.id]||{};const C=Object.values(c).reduce((s,n)=>s+n,0);const pct=100*(ans.w+(c[ans.k]||0))/(P.W+C);return{pct,ti:TIERS.findIndex(t=>pct>=t.min),C}}
+function top3(P){const c=counts[P.id]||{};const m=new Map(P.e.map(o=>[o.k,{n:o.name,v:o.w+(c[o.k]||0)}]));for(const k in c)if(!m.has(k)){const n=extras[P.id]?.get(k);if(n)m.set(k,{n,v:c[k]})}return[...m.values()].sort((a,b)=>b.v-a.v).slice(0,3).map(o=>o.n)}
+function deepCut(P,not){const c=counts[P.id]||{};const pool=P.e.filter((o,i)=>i>P.e.length*.6&&!c[o.k]&&o.k!==not);return pool.length?pool[Math.floor(Math.random()*pool.length)].name:null}
+function findLocal(P,txt){const k=key(txt);if(!k)return null;const ent=i=>({name:P.e[i].name,k:P.e[i].k,w:P.e[i].w});if(P.idx.has(k))return ent(P.idx.get(k));const ex=extras[P.id];if(ex&&ex.has(k))return{name:ex.get(k),k,w:0};const f=fuzzy(k,P.idx.keys());if(f)return ent(P.idx.get(f));if(ex){const g=fuzzy(k,ex.keys());if(g)return{name:ex.get(g),k:g,w:0}}return null}
+const zoneOf=m=>{let z=ZONES[0][1];for(const[d,n]of ZONES)if(m>=d)z=n;return z};
+const pos=m=>Math.sqrt(Math.min(m,10994)/10994)*100;
+function buildCol(){$('#col').innerHTML=ZONES.map(([d,n],i)=>`<div class="z${i===ZONES.length-1?' end':''}" style="top:${i===ZONES.length-1?'calc(100% - 44px)':pos(d)+'%'}"><b>${fmt(d)} m</b>${n}</div>`).join('')+`<div class="diver" id="diver" style="top:3%"><span id="dm">0 m</span><i></i></div>`}
+function gauge(){const m=me.d===today?me.sc*15:0;const dv=$('#diver');if(dv){dv.style.top=Math.max(3,Math.min(96,pos(m)))+'%';$('#dm').textContent=fmt(m)+' m'}$('#mm').textContent=fmt(m)+' m';$('#mz').textContent=zoneOf(m)}
+function status(){const n=$('#net');if(!online){n.textContent='Sem conexão com o placar: a raridade usa só a estimativa inicial e seu progresso fica neste navegador.';return}if(!canWrite){n.textContent='Não consegui salvar suas respostas no placar. Recarregue a página.';return}n.textContent=`Raridade ao vivo · ${players} ${players===1?'mergulhador':'mergulhadores'} até agora`}
+function pickDaily(){const R=rng('abissal2-'+today),ord=BANK.map((_,i)=>i);for(let i=ord.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]]}const out=[],gs=new Set();let lettered=0;for(const i of ord){const P=BANK[i];const lt=P.g.endsWith('-l')||P.g==='letras';const g=P.g.replace(/-l$/,'');if(gs.has(g)||(lt&&lettered>=1))continue;gs.add(g);if(lt)lettered++;out.push(i);if(out.length===7)break}return out}
+/* ---------- screens ---------- */
+function screenIntro(){if(me.d===today&&me.done)return screenDone();const part=me.d===today&&me.i>0;
+stage.innerHTML=`<div class="meta"><span>Mergulho de ${today.slice(8)}/${today.slice(5,7)}</span><span>7 perguntas · 25 s</span></div><h2 class="q">Pense no óbvio. Depois, não responda o óbvio.</h2><p>Banana é uma fruta, mas vale 10 pontos. Jambo também é, e quase ninguém lembra dele. Quando você responde, a isca desce pelo mar, e só as respostas raras chegam ao fundo.</p><p class="small">${BANK.length} perguntas no banco e mais de ${fmt(Math.floor(BANK.reduce((s,p)=>s+p.e.length,0)/1000)*1000)} respostas conhecidas. As perguntas sorteadas mudam todo dia.</p>
+<form id="nf" class="row" autocomplete="off"><input id="nick" aria-label="Seu apelido no placar" placeholder="Seu apelido no placar" maxlength="20" value="${esc(nickname)}"><button class="btn" id="go">${part?`Continuar da pergunta ${me.i+1}`:'Mergulhar'}</button></form><div class="row" style="margin-top:10px"><button class="ghost" id="pr">Treino livre</button></div><p class="msg" id="nmsg"></p>`;
+$('#nf').addEventListener('submit',async ev=>{ev.preventDefault();audio();const n=$('#nick').value.trim();if(n.length<2){$('#nmsg').textContent='Escolha um apelido com pelo menos 2 letras.';$('#nick').focus();return}if(n!==nickname)saveNick(n);start()});
+$('#pr').onclick=()=>{audio();practice()};gauge()}
+function start(){if(me.d!==today){me=blank();me.d=today}mode='daily';next()}
+function practice(){mode='practice';next()}
+function next(){locked=false;busy=false;checks=0;if(mode==='daily'){if(me.i>=7)return screenDone();cur=BANK[DAILY[me.i]]}else{const pool=BANK.map((_,i)=>i).filter(i=>!DAILY.includes(i));cur=BANK[pool[Math.floor(Math.random()*pool.length)]]}
+countsReady=mode==='practice'?loadCounts([cur.id]):loadCounts([cur.id]);
+stage.innerHTML=`<div class="meta"><span>${mode==='daily'?`Pergunta ${me.i+1} de 7`:'Treino livre · não conta no placar'}</span><span id="secs">25</span></div><h2 class="q">${esc(cur.q)}</h2><form id="f" autocomplete="off"><input id="ans" aria-label="Sua resposta" placeholder="Sua resposta rara…" enterkeyhint="send" autocapitalize="off" spellcheck="false" maxlength="60"><button class="btn" id="send">Enviar</button></form><div class="tbar" id="tbar"><i id="tb"></i></div><p id="msg" class="msg" aria-live="polite"></p><button class="ghost" id="skip">Pular</button>`;
+const inp=$('#ans');inp.focus();
+$('#f').addEventListener('submit',ev=>{ev.preventDefault();audio();submit(inp.value.trim())});
+$('#skip').onclick=()=>resolve(null,-1);
+left=25000;runTimer()}
+function runTimer(){clearInterval(timer);tEnd=Date.now()+left;let lastS=99;timer=setInterval(()=>{left=Math.max(0,tEnd-Date.now());const tb=$('#tb'),s=$('#secs');if(tb)tb.style.width=left/250+'%';const sec=Math.ceil(left/1000);if(s)s.textContent=sec;if(sec<=5&&sec<lastS&&left>0)tone(1200,.05,'square',.02);lastS=sec;if(!left)resolve(null,-2)},100)}
+function pauseTimer(){clearInterval(timer);left=Math.max(0,tEnd-Date.now());$('#tbar')?.classList.add('paused')}
+function resumeTimer(){$('#tbar')?.classList.remove('paused');if(!locked)runTimer()}
+function reject(m){const inp=$('#ans');$('#msg').className='msg';$('#msg').textContent=m;if(inp){inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select()}tone(140,.18,'sawtooth',.03)}
+async function submit(v){if(!v||locked||busy)return;if(cur.l&&!lettersOk(v,cur.l))return reject(`“${v}” não dá para formar só com as letras de ${cur.l.toUpperCase()}.`);
+await Promise.race([countsReady,sleep(1500)]);
+const hit=findLocal(cur,v);if(hit)return resolve(hit,0);
+if(!online||!judgeOK)return reject(`“${v}” não está na lista. Tente outra.`);
+if(checks>=4)return reject('Chega de consultas nesta pergunta: tente algo da lista.');
+checks++;busy=true;pauseTimer();$('#msg').className='msg ok';$('#msg').textContent=`Consultando o juiz sobre “${v}”… o tempo está pausado.`;$('#send').disabled=true;
+try{const r=await judge(cur,v);busy=false;$('#send').disabled=false;if(locked)return;
+if(r.valid){const name=String(r.name||v).slice(0,60);const loc=findLocal(cur,name);resolve(loc||{name,k:key(v),w:0},0)}
+else{resumeTimer();reject(`O juiz não aceitou “${v}”. Tente outra.`)}}
+catch(e){busy=false;$('#send').disabled=false;resumeTimer();reject(e&&e.code==='rate_limited'?'Você atingiu o limite de consultas ao juiz por hoje. Tente algo da lista.':`Não consegui conferir “${v}”. Tente outra.`)}}
+function resolve(ans,code){if(locked)return;locked=true;clearInterval(timer);let r=null,t=null,pts=0;if(ans){r=rarity(cur,ans);t=TIERS[r.ti];pts=t.p}
+if(mode==='daily'){me.pts.push(pts);me.ans.push(ans?ans.name:null);me.tt.push(ans?r.ti:-1);me.i++;me.sc+=pts;me.done=me.i>=7;save(ans)}
+reveal(ans,r,t,code)}
+/* ---------- the dive ---------- */
+const BH=230,TOP=70,LY=120;
+function reveal(ans,r,t,code){const last=mode==='daily'&&me.done;
+const layers=TIERS.map((T,j)=>`<div class="layer" id="ly${j}" style="top:${TOP+j*BH}px;height:${BH}px;background-color:${T.bg}"><div class="tag">${fishSvg(T)}<b style="color:${T.c}">${T.n}</b><span>${T.p} pts</span></div><svg class="deco" viewBox="0 0 120 70" style="width:${54+j*10}px;right:${3+((j*7)%12)}%;top:${120+((j*53)%70)}px;color:${T.c}"><use href="#fish"/></svg></div>`).join('');
+stage.innerHTML=`<div class="meta"><span>${esc(cur.q)}</span><span>${mode==='daily'?`${me.i} de 7`:'Treino'}</span></div>${ans?`<p class="your">Sua isca: <b>${esc(ans.name)}</b></p>`:''}<div class="abyss" id="aby"><div class="world" id="world" style="height:${TOP+6*BH+40}px"><div class="surf"></div>${layers}</div><div class="line"></div><div class="lure" id="lure"><svg viewBox="0 0 38 54" width="38" height="54"><use href="#bait"/></svg></div><div class="depth" id="dc">0 m</div><div class="verdict" id="vd"></div><div class="skiphint">${ans?'Toque para pular':''}</div></div><div class="after" id="after"></div>`;
+const world=$('#world'),dc=$('#dc'),lure=$('#lure'),aby=$('#aby');
+const M=TIERS.map(T=>T.p*15);
+const keyY=[30],keyM=[0];if(ans){for(let j=1;j<=r.ti;j++){keyY.push(TOP+j*BH);keyM.push(M[j-1])}keyY.push(TOP+r.ti*BH+BH*.55);keyM.push(M[r.ti])}
+const mAt=y=>{for(let i=1;i<keyY.length;i++)if(y<=keyY[i]){const a=keyY[i-1],b=keyY[i];return keyM[i-1]+(keyM[i]-keyM[i-1])*((y-a)/(b-a||1))}return keyM[keyM.length-1]};
+const set=y=>{world.style.transform=`translateY(${LY+8-y}px)`;dc.textContent=fmt(mAt(y))+' m'};set(30);
+let skip=matchMedia('(prefers-reduced-motion: reduce)').matches;const wakers=[];aby.onclick=()=>{skip=true;wakers.splice(0).forEach(f=>f())};
+const wait=ms=>new Promise(res=>{if(skip)return res();const id=setTimeout(res,ms);wakers.push(()=>{clearTimeout(id);res()})});
+const ease=p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2,easeOut=p=>1-Math.pow(1-p,3);
+const tween=(a,b,dur,fn)=>new Promise(res=>{const t0=performance.now();const f=now=>{if(skip){set(b);return res()}const p=Math.min(1,(now-t0)/dur);set(a+(b-a)*fn(p));p<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)});
+const bubbles=n=>{for(let i=0;i<n;i++){const b=document.createElement('i');b.className='bub';b.style.left=(46+Math.random()*10)+'%';b.style.animationDelay=(Math.random()*.6)+'s';b.style.width=b.style.height=(4+Math.random()*7)+'px';aby.append(b);setTimeout(()=>b.remove(),3200)}};
+(async()=>{if(!ans){await wait(250);finish();return}
+ping();bubbles(6);await wait(500);
+let y=30;for(let j=1;j<=r.ti;j++){const by=TOP+j*BH;await tween(y,by,520+j*150,ease);y=by;blip(j);lure.classList.remove('tug');void lure.offsetWidth;lure.classList.add('tug');await wait(320+j*140)}
+const fy=TOP+r.ti*BH+BH*.55;await tween(y,fy,700+r.ti*80,easeOut);set(fy);$('#ly'+r.ti)?.classList.add('hit');if(r.ti===5)lure.classList.add('glow');finale(r.ti);bubbles(r.ti>=4?14:5);finish()})();
+function finish(){aby.onclick=null;const vd=$('#vd');vd.innerHTML=ans?`<b style="color:${t.c}">${t.n}</b><span>+${t.p} pontos · +${fmt(t.p*15)} m</span>`:`<b>${code===-2?'Acabou o ar':'Pulou'}</b><span>Nenhum ponto nesta pergunta</span>`;vd.classList.add('on');$('.skiphint').textContent='';
+const tops=top3(cur),dc2=deepCut(cur,ans&&ans.k),after=$('#after');
+after.innerHTML=`${ans?`<p class="small">${r.pct<.01?'Menos de 0,01%':'Cerca de '+fmtPct(r.pct)} das respostas${r.C?`, contando ${r.C} ${r.C===1?'resposta de jogador':'respostas de jogadores'} e a estimativa inicial`:', pela estimativa inicial'}.${ans.w===0?' Essa nem estava na nossa lista.':''}</p>`:''}<p class="small">Mais comuns: ${tops.map(esc).join(' · ')}</p>${dc2?`<p class="small">Uma resposta abissal seria: <b style="color:var(--glow)">${esc(dc2)}</b></p>`:''}<div class="row"><button class="btn" id="nx">${last?'Ver meu mergulho':mode==='daily'?'Próxima pergunta':'Outra pergunta'}</button>${mode==='practice'?'<button class="ghost" id="bk">Voltar</button>':''}</div>`;
+requestAnimationFrame(()=>after.classList.add('on'));gauge();$('#nx').onclick=()=>{audio();last?screenDone():next()};$('#nx').focus();const bk=$('#bk');if(bk)bk.onclick=screenIntro}}
+function shareText(){return `Abissal ${today.slice(8)}/${today.slice(5,7)} · ${fmt(me.sc*15)} m\n${me.tt.map(t=>t<0?'⬛':TIERS[t].sq).join('')}\n${location.origin+location.pathname}`}
+function screenDone(){const m=me.sc*15;stage.innerHTML=`<div class="meta"><span>Mergulho de hoje concluído</span><span>${me.sc} pontos</span></div><div class="big">${fmt(m)} m</div><p class="your">Você chegou à ${zoneOf(m).toLowerCase()}.</p><table class="stack"><thead><tr><th>Pergunta</th><th>Sua resposta</th><th>Nível</th><th style="text-align:right">Pontos</th></tr></thead><tbody>${DAILY.map((b,k)=>{const P=BANK[b],t=me.tt[k];return `<tr><td>${esc(P.q)}</td><td>${me.ans[k]?esc(me.ans[k]):'—'}</td><td style="color:${t>=0?TIERS[t].c:'inherit'}">${t>=0?TIERS[t].n:'Sem resposta'}</td><td class="n">${me.pts[k]??0}</td></tr>`}).join('')}</tbody></table><pre id="sh">${esc(shareText())}</pre><div class="row"><button class="btn" id="cp">Copiar resultado</button><button class="ghost" id="pr">Treino livre</button></div><p class="small">Novas perguntas à meia-noite.</p>`;
+$('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(shareText());$('#cp').textContent='Copiado'}catch(e){$('#cp').textContent='Selecione o texto acima'}};$('#pr').onclick=()=>{audio();practice()};gauge();board()}
+async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('span');a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;const b=document.createElement('span');b.textContent=fmt(o.score*15)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
+$('#tiers').innerHTML=TIERS.map(t=>`<li>${fishSvg(t)}<span><b style="color:${t.c}">${t.n}</b><br><span class="small">${t.d}</span></span><span class="p">${t.p} pts</span></li>`).join('');
+buildCol();gauge();
+function loadLocal(){try{const s=JSON.parse(localStorage.getItem('abissal-me')||'null');if(s)me=Object.assign(blank(),s)}catch(e){}}
+try{nickname=localStorage.getItem('abissal-nick')||''}catch(e){}
+(async()=>{
+try{const res=await fetch('prompts.json');BANK=(await res.json()).map(build)}catch(e){stage.innerHTML='<p>Não consegui carregar as perguntas. Recarregue a página.</p>';return}
+DAILY=pickDaily();
+const cfg=window.ABISSAL_CONFIG||{};
+try{if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||!window.supabase)throw new Error('not configured');
+sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+let{data:{session}}=await sb.auth.getSession();
+if(!session){const{data,error}=await sb.auth.signInAnonymously();if(error)throw error;session=data.session}
+uid=session.user.id;online=true;
+const{data:p}=await sb.from('players').select('nickname').eq('id',uid).maybeSingle();if(p&&p.nickname)nickname=p.nickname;
+await Promise.all([loadMine(),loadCounts(DAILY.map(i=>BANK[i].id))]);
+}catch(e){console.warn('Abissal offline mode:',e);online=false;loadLocal();$('#foot').textContent+=' Sem conexão com o servidor: só valem respostas que já estão na lista.'}
+status();board();screenIntro()})();
+}
+</script>
+</body></html>
