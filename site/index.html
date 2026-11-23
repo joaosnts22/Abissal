@@ -91,6 +91,13 @@ pre{white-space:pre-wrap;background:#041c25;border-radius:12px;padding:12px 14px
 ol.board{margin:0;padding:0;list-style:none}
 ol.board li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
 ol.board li.me{color:var(--glow);font-weight:700}
+.who{background:none;border:0;padding:6px 0;min-height:36px;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline;text-decoration-color:rgba(234,247,247,.35);text-underline-offset:3px}
+.who:hover{text-decoration-color:var(--glow)}.who:focus-visible{outline:3px solid var(--glow);outline-offset:2px;border-radius:4px}
+dialog.peek{width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 40px);border:1px solid var(--line);border-radius:20px;background:#04202b;color:var(--ink);padding:22px 24px}
+dialog.peek::backdrop{background:rgba(1,10,14,.7)}
+dialog.peek h3{margin:0;font-size:24px;line-height:1.15}
+dialog.peek .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+dialog.peek .x{height:40px;min-width:40px;border-radius:12px;border:1.5px solid var(--line);background:none;color:var(--ink);font:700 18px Rubik,sans-serif;cursor:pointer}
 footer{color:var(--mute);font-size:13px;padding-top:0}
 @media(max-width:760px){.main,.lower{grid-template-columns:minmax(0,1fr)}.col{display:none}.gauge{position:static}.mini{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px}.mini b{color:var(--glow);font-size:20px;white-space:nowrap}.abyss{height:300px}}
 @media(prefers-reduced-motion:reduce){.diver{transition:none}.shake,.lure.tug,.bub{animation:none}}
@@ -119,6 +126,7 @@ footer{color:var(--mute);font-size:13px;padding-top:0}
 <ul class="tiers" id="tiers"></ul></div>
 <div class="panel"><h3>Mergulhadores de hoje</h3><div id="board" class="small">Ninguém terminou o mergulho de hoje ainda.</div></div>
 </section>
+<dialog class="peek" id="peek" aria-labelledby="peekT"><div class="top"><div><h3 id="peekT"></h3><p class="small" id="peekS"></p></div><button class="x" id="peekX" aria-label="Fechar">✕</button></div><div id="peekB"></div></dialog>
 <footer class="band wrap" id="foot">As perguntas mudam à meia-noite, horário de Brasília. Grafias com ou sem acento, no plural e com um errinho de digitação também valem.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -262,7 +270,16 @@ requestAnimationFrame(()=>after.classList.add('on'));gauge();$('#nx').onclick=()
 function shareText(){return `Abissal ${today.slice(8)}/${today.slice(5,7)} · ${fmt(me.sc*MPP)} m\n${me.tt.map(t=>t<0?'⬛':TIERS[t].sq).join('')}\n${location.origin+location.pathname}`}
 function screenDone(){const m=me.sc*MPP;stage.innerHTML=`<div class="meta"><span>Mergulho de hoje concluído</span><span>${me.sc} pontos</span></div><div class="big">${fmt(m)} m</div><p class="your">Você chegou à ${zoneOf(m).toLowerCase()}.</p><table class="stack"><thead><tr><th>Pergunta</th><th>Sua resposta</th><th>Nível</th><th style="text-align:right">Pontos</th></tr></thead><tbody>${DAILY.map((b,k)=>{const P=BANK[b],t=me.tt[k];return `<tr><td>${esc(P.q)}</td><td>${me.ans[k]?esc(me.ans[k]):'—'}</td><td style="color:${t>=0?TIERS[t].c:'inherit'}">${t>=0?TIERS[t].n:'Sem resposta'}</td><td class="n">${me.pts[k]??0}</td></tr>`}).join('')}</tbody></table><pre id="sh">${esc(shareText())}</pre><div class="row"><button class="btn" id="cp">Copiar resultado</button><button class="ghost" id="pr">Treino livre</button></div><p class="small">Novas perguntas à meia-noite.</p>`;
 $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(shareText());$('#cp').textContent='Copiado'}catch(e){$('#cp').textContent='Selecione o texto acima'}};$('#pr').onclick=()=>{audio();practice()};gauge();board()}
-async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('span');a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;const b=document.createElement('span');b.textContent=fmt(o.score*MPP)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
+/* ---------- see a player's answers (only after finishing your own dive) ---------- */
+const peekD=$('#peek');$('#peekX').onclick=()=>peekD.close();peekD.addEventListener('click',e=>{if(e.target===peekD)peekD.close()});
+async function peek(ref,nick,isMe){$('#peekT').textContent=isMe?'Suas respostas':nick;$('#peekS').textContent='Mergulho de '+today.slice(8)+'/'+today.slice(5,7);const body=$('#peekB');
+if(!(me.d===today&&me.done)){body.innerHTML='<p>Termine o seu mergulho de hoje para ver as respostas dos outros.</p>';peekD.showModal();return}
+body.innerHTML='<p class="small">Carregando…</p>';peekD.showModal();
+try{const{data,error}=await sb.rpc('dive_details',{p_day:today,p_ref:ref});if(error||!data||!data.length)throw error||new Error('none');const d=data[0];
+const rows=d.prompt_ids.map((pid,k)=>{const P=BANK.find(b=>b.id===pid);const t=d.tiers[k];const T=t>=0&&t<TIERS.length?TIERS[t]:null;return `<tr><td>${esc(P?P.q:pid)}</td><td>${d.answers[k]?esc(d.answers[k]):'—'}</td><td style="color:${T?T.c:'inherit'}">${T?T.n:'Sem resposta'}</td><td class="n">${d.points[k]??0}</td></tr>`}).join('');
+body.innerHTML=`<p class="big" style="font-size:34px;margin:12px 0 4px">${fmt(d.score*MPP)} m</p><table class="stack"><thead><tr><th>Pergunta</th><th>Resposta</th><th>Nível</th><th style="text-align:right">Pontos</th></tr></thead><tbody>${rows}</tbody></table>`}
+catch(e){body.innerHTML='<p>Não consegui carregar essas respostas.</p>'}}
+async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('button');a.type='button';a.className='who';a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;a.title='Ver respostas';a.onclick=()=>peek(o.ref,o.nickname,o.is_me);const b=document.createElement('span');b.textContent=fmt(o.score*MPP)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
 $('#tiers').innerHTML=TIERS.map(t=>`<li>${fishSvg(t)}<span><b style="color:${t.c}">${t.n}</b><br><span class="small">${t.d}</span></span><span class="p">${t.p} pts</span></li>`).join('');
 buildCol();gauge();
 function loadLocal(){try{const s=JSON.parse(localStorage.getItem('abissal-me')||'null');if(s)me=Object.assign(blank(),s)}catch(e){}}
