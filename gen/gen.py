@@ -6,6 +6,7 @@ from data_nature import *
 from data_food import *
 from data_culture import *
 from data_misc import *
+from data_new import *
 
 STOP = set('o a os as um uma de do da dos das e'.split())
 
@@ -185,12 +186,50 @@ P('genero', 'Um gênero ou ritmo musical', 'genero', GENERO)
 for w, txt in LETRAS:
     P('letras-' + w, f'Uma palavra de 3+ letras usando só as letras de {w.upper()}', 'letras', txt, letters=w)
 
+
+# ---- New prompts: ratings are written inline as Name/alias#rating (#9 = skip)
+NEWR = {}
+def PR(pid, q, g, text):
+    pairs = []
+    for raw in text.replace('\n', ' ').split(';'):
+        raw = raw.strip()
+        if not raw: continue
+        name, _, r = raw.rpartition('#')
+        if not name: name, r = raw, '4'
+        r = int(r.strip() or 4)
+        if r > 7 or name.strip().endswith('?'): continue
+        pairs.append((name.strip(), r))
+    rmap = {}
+    for n, r in pairs: rmap.setdefault(key(n.split('/')[0]), r)
+    entries = P(pid, q, g, ';'.join(n for n, _ in pairs))
+    NEWR[pid] = [rmap.get(key(e[0]), 4) for e in entries]
+    return entries
+
+PR('carro', 'Um modelo de carro vendido no Brasil (atual ou antigo)', 'carro', CARRO)
+PR('marca-carro', 'Uma marca de carro ou de moto', 'marca-carro', MARCA_CARRO)
+PR('videogame', 'Um jogo de videogame', 'videogame', VIDEOGAME)
+PR('console', 'Um console ou portátil de videogame', 'console', CONSOLE)
+PR('filme-br', 'Um filme brasileiro', 'filme-br', FILME_BR)
+PR('serie', 'Uma série de TV estrangeira', 'serie', SERIE)
+PR('giria', 'Uma gíria carioca', 'giria', GIRIA)
+PR('praia', 'Uma praia brasileira', 'praia', PRAIA)
+PR('clube-eu', 'Um clube de futebol europeu', 'clube-eu', CLUBE_EU)
+PR('cerveja', 'Uma marca de cerveja', 'cerveja', CERVEJA)
+PR('brincadeira', 'Uma brincadeira ou brinquedo de infância', 'brincadeira', BRINCADEIRA)
+PR('pao', 'Um tipo de pão', 'pao', PAO)
+PR('cobra', 'Uma cobra ou serpente', 'cobra', COBRA)
+PR('disney', 'Uma animação da Disney (sem contar Pixar)', 'disney', DISNEY)
+PR('anime', 'Um anime (série ou filme)', 'anime', ANIME)
+PR('metro-rio', 'Uma estação do metrô do Rio de Janeiro', 'metro', METRO_RIO)
+PR('simpsons', 'Um personagem de Os Simpsons', 'simpsons', SIMPSONS)
+
 # ---- Obscurity ratings (1 = obvious ... 7 = extremely obscure), produced once by the rating job.
 # ratings.json: {prompt_id: [rating per answer, in list order]}. Letter variants reuse their base prompt's ratings.
 RATINGS = {}
 rp = os.path.join(HERE, 'ratings.json')
 if os.path.exists(rp):
     RATINGS = {k: [int(c) for c in v] if isinstance(v, str) else v for k, v in json.load(open(rp, encoding='utf-8')).items()}
+RATINGS.update(NEWR)
 
 def finish(p):
     entries = p['a'].split(';')

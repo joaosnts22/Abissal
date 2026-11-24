@@ -108,6 +108,23 @@ td,th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertic
 th{font-weight:500;color:var(--mute);font-size:13px}
 td.n{text-align:right;white-space:nowrap;font-family:'Chakra Petch',sans-serif;font-weight:600}
 pre{white-space:pre-wrap;background:#0e1310;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:15px/1.5 'IBM Plex Sans',sans-serif;margin:14px 0 0}
+/* --- the new part: creature reveal --- */
+.beast{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;padding-bottom:84px;z-index:2}
+.beast .veil{position:absolute;inset:0;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 44%,rgba(8,11,9,.94) 0 34%,rgba(8,11,9,.7) 56%,rgba(8,11,9,0) 78%)}
+.beast.on .veil{opacity:1}.beast.deep .veil{background:radial-gradient(circle at 50% 44%,rgba(3,5,4,.97) 0 46%,rgba(3,5,4,.85) 70%,rgba(3,5,4,.5))}
+.beast .holder{position:relative;width:min(74%,380px)}
+.bob{animation:bob 3.4s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-7px) rotate(-1.5deg)}}
+.cr{position:relative;display:block}.cr img{display:block;width:100%;height:auto;transition:opacity 1s ease,filter 1.2s ease}
+.cr.dark img{opacity:0;filter:brightness(0)}
+svg.cr{width:100%;height:auto;overflow:visible}svg.cr>*{transition:opacity .9s ease}svg.cr.dark>:not(.keep):not(defs){opacity:0}svg.cr .eye{transform-box:fill-box;transform-origin:center}
+.cr .lure{position:absolute;width:14px;height:14px;margin:-7px;border-radius:50%;background:#ffd27a;box-shadow:0 0 10px 4px #ffb547,0 0 40px 14px rgba(255,181,71,.45);animation:flick 2.2s infinite}
+@keyframes flick{0%,100%{opacity:1}46%{opacity:1}50%{opacity:.3}54%{opacity:1}}
+.cr .eye{position:absolute;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#fff;box-shadow:0 0 8px 3px #c9b8ff,0 0 26px 8px rgba(201,184,255,.5)}
+.bub{position:absolute;border:2px solid rgba(125,255,168,.7);border-radius:50%;animation:rise 1.1s ease-out forwards}
+@keyframes rise{from{opacity:.9;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-120px) scale(1.1)}}
+.bping{position:absolute;left:50%;top:44%;width:40px;height:40px;margin:-20px;border:2px solid var(--green);border-radius:50%;animation:png .9s ease-out forwards}
+@keyframes png{to{transform:scale(9);opacity:0}}
+.rstat,.rsig,.skiphint{z-index:3}
 .fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:50}
 footer{color:var(--mute);font-size:13px;padding-top:0}
 @media(max-width:1080px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.gauge{grid-column:span 2;position:static}.col{display:none}.mini{display:flex;justify-content:space-between;gap:12px;align-items:center}.mini b{font:700 20px 'Chakra Petch',sans-serif;color:var(--amber)}}
@@ -128,6 +145,7 @@ footer{color:var(--mute);font-size:13px;padding-top:0}
 <div class="panel radarbox" id="radarbox" aria-live="polite">
 <div class="rstat"><span id="rdepth">PROFUNDIDADE <b>0000 m</b></span><span id="rpress">PRESSÃO 1 atm</span></div>
 <svg id="radar" viewBox="0 0 480 480" role="img" aria-label="Radar de sondagem"></svg>
+<div class="beast" id="beast"></div>
 <div class="rsig" id="rsig"></div>
 <div class="skiphint" id="skiphint"></div>
 </div>
@@ -144,7 +162,7 @@ footer{color:var(--mute);font-size:13px;padding-top:0}
 <div class="panel"><h3>Registro da frota</h3><p class="small" style="margin-top:0">Toque num nome para ver as respostas (depois de terminar o seu mergulho).</p><div id="board" class="small">Ninguém terminou o mergulho de hoje ainda.</div></div>
 </section>
 <dialog class="peek" id="peek" aria-labelledby="peekT"><div class="top"><div><h3 id="peekT"></h3><p class="small" id="peekS"></p></div><button class="x" id="peekX" aria-label="Fechar">✕</button></div><div id="peekB"></div></dialog>
-<footer class="band wrap" id="foot">As sondagens mudam à meia-noite, horário de Brasília. Grafias com ou sem acento, no plural e com um errinho de digitação também valem.</footer>
+<footer class="band wrap" id="foot">As sondagens mudam à meia-noite, horário de Brasília. Grafias com ou sem acento, no plural e com um errinho de digitação também valem.<br>Créditos das imagens (Wikimedia Commons): <a href="https://commons.wikimedia.org/wiki/File:Sardina_pilchardus_Gervais.jpg" style="color:inherit">sardinha</a>, <a href="https://commons.wikimedia.org/wiki/File:Canthigaster_rostrata_inflated_SI.jpg" style="color:inherit">baiacu</a>, <a href="https://commons.wikimedia.org/wiki/File:Octopus_vulgaris_Merculiano.jpg" style="color:inherit">polvo</a>, <a href="https://commons.wikimedia.org/wiki/File:Urobatis_halleri_underside.jpg" style="color:inherit">arraia</a>, <a href="https://commons.wikimedia.org/wiki/File:Giant_squid,_Romsdalsfjord,_September_1946.jpg" style="color:inherit">lula-gigante</a>, <a href="https://commons.wikimedia.org/wiki/File:Melanocetus_johnsonii.jpg" style="color:inherit">peixe-abissal</a>.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script>
@@ -192,10 +210,10 @@ const sndBtn=$('#snd');const sndLabel=()=>{sndBtn.textContent=soundOn?'Som ligad
 sndBtn.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem('abissal-sound',soundOn?'1':'0')}catch(e){}sndLabel();audio()};
 /* ---------- backend (Supabase) ---------- */
 async function loadCounts(ids){if(!online)return;try{const[{data:c},{data:x}]=await Promise.all([sb.rpc('get_counts',{p_ids:ids}),sb.rpc('get_extras',{p_ids:ids})]);for(const id of ids){counts[id]={};extras[id]=new Map()}for(const r of c||[])counts[r.prompt_id][r.answer_key]=r.n;for(const r of x||[])extras[r.prompt_id].set(r.answer_key,{name:r.name,r:r.rating||4})}catch(e){}}
-function save(ans){const local=JSON.parse(JSON.stringify(me));try{localStorage.setItem('abissal-me',JSON.stringify(local))}catch(e){}if(!online||!canWrite)return;
+function save(ans){me.set=DAILY.map(i=>BANK[i].id).join();const local=JSON.parse(JSON.stringify(me));try{localStorage.setItem('abissal-me',JSON.stringify(local))}catch(e){}if(!online||!canWrite)return;
 const pid=cur.id;wq=wq.then(async()=>{if(ans){const{error}=await sb.from('answers').upsert({prompt_id:pid,player_id:uid,answer_key:ans.k.slice(0,80),answer_name:ans.name.slice(0,80),day:today,updated_at:new Date().toISOString()});if(error)throw error}
 const{error}=await sb.from('dives').upsert({player_id:uid,day:today,prompt_ids:DAILY.map(i=>BANK[i].id),answers:local.ans.map(a=>a||''),tiers:local.tt,points:local.pts,score:local.sc,done:local.done,updated_at:new Date().toISOString()});if(error)throw error}).catch(e=>{console.error(e);canWrite=false;status()})}
-async function loadMine(){const{data}=await sb.from('dives').select('*').eq('player_id',uid).eq('day',today).maybeSingle();if(!data)return;me={d:today,i:data.answers.length,ans:data.answers.map(a=>a||null),tt:data.tiers,pts:data.points,sc:data.score,done:data.done}}
+async function loadMine(){const{data}=await sb.from('dives').select('*').eq('player_id',uid).eq('day',today).maybeSingle();if(!data)return;if((data.prompt_ids||[]).join()!==DAILY.map(i=>BANK[i].id).join())return;me={d:today,i:data.answers.length,ans:data.answers.map(a=>a||null),tt:data.tiers,pts:data.points,sc:data.score,done:data.done}}
 async function judge(P,v){const{data,error}=await sb.functions.invoke('judge',{body:{prompt_id:P.id,answer:v}});if(error){const st=error.context&&error.context.status;throw{code:st===429?'rate_limited':'error'}}if(!data||typeof data.valid!=='boolean')throw{code:'error'};return data}
 const NICK_MSG={length:'Use de 2 a 20 caracteres.',chars:'Use só letras, números, espaço, ponto, hífen ou sublinhado.',blocked:'Esse apelido não é permitido. Escolha outro.',rate_limited:'Muitas tentativas de apelido hoje. Tente de novo mais tarde.',unavailable:'Não consegui conferir o apelido agora. Você vai aparecer como “Mergulhador” no placar.'};
 async function saveNick(n){if(!online){nickname=n;try{localStorage.setItem('abissal-nick',n)}catch(e){}return{ok:true}}
@@ -217,7 +235,9 @@ const pos=m=>Math.sqrt(Math.min(m,10994)/10994)*100;
 function buildCol(){$('#col').innerHTML='<div class="fill" id="cfill" style="height:0"></div>'+ZONES.map(([d,n],i)=>`<div class="z${i===ZONES.length-1?' end':''}" style="top:${i===ZONES.length-1?'calc(100% - 44px)':pos(d)+'%'}"><b>${fmt(d)} m</b>${n}</div>`).join('')+`<div class="diver" id="diver" style="top:3%"><span id="dm">0 m</span><i></i></div>`}
 function gauge(){const m=me.d===today?me.sc*MPP:0;const hd=$('#hdepth');if(hd)hd.textContent=fmt(m)+' m';const cf=$('#cfill');if(cf)cf.style.height=Math.min(100,pos(m))+'%';const dv=$('#diver');if(dv){dv.style.top=Math.max(3,Math.min(96,pos(m)))+'%';$('#dm').textContent=fmt(m)+' m'}$('#mm').textContent=fmt(m)+' m';$('#mz').textContent=zoneOf(m)}
 function status(){const n=$('#net');if(!online){n.textContent='Sem conexão com o placar: a raridade usa só a estimativa inicial e seu progresso fica neste navegador.';return}if(!canWrite){n.textContent='Não consegui salvar suas respostas no placar. Recarregue a página.';return}n.textContent=`Raridade ao vivo · ${players} ${players===1?'mergulhador':'mergulhadores'} até agora`}
-function pickDaily(){const R=rng('abissal2-'+today),ord=BANK.map((_,i)=>i);for(let i=ord.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]]}const out=[],gs=new Set();let lettered=0;for(const i of ord){const P=BANK[i];const lt=P.g.endsWith('-l')||P.g==='letras';const g=P.g.replace(/-l$/,'');if(gs.has(g)||(lt&&lettered>=1))continue;gs.add(g);if(lt)lettered++;out.push(i);if(out.length===7)break}return out}
+/* hand-picked sets for specific days (they replace the random pick) */
+const SPECIAL={'2026-11-24':['praia','carro','pao','simpsons','clube-eu','videogame','giria']};
+function pickDaily(){const sp=SPECIAL[today];if(sp){const ix=sp.map(id=>BANK.findIndex(p=>p.id===id));if(ix.every(i=>i>=0))return ix}const R=rng('abissal2-'+today),ord=BANK.map((_,i)=>i);for(let i=ord.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]]}const out=[],gs=new Set();let lettered=0;for(const i of ord){const P=BANK[i];const lt=P.g.endsWith('-l')||P.g==='letras';const g=P.g.replace(/-l$/,'');if(gs.has(g)||(lt&&lettered>=1))continue;gs.add(g);if(lt)lettered++;out.push(i);if(out.length===7)break}return out}
 /* ---------- screens ---------- */
 function screenIntro(){if(me.d===today&&me.done)return screenDone();const part=me.d===today&&me.i>0;
 stage.innerHTML=`<div class="meta"><span>Mergulho de ${today.slice(8)}/${today.slice(5,7)}</span><span>7 sondagens · 25 s</span></div><h2 class="q">Pense no óbvio. Depois, não responda o óbvio.</h2><p>Banana é uma fruta, mas vale 10 pontos. Grumixama também é, e quase ninguém conhece. As duas respostas mais obscuras de cada pergunta valem 150: são as “um em um milhão”. Quando você responde, a sonda sai do centro do radar, e só as respostas raras chegam aos anéis de fora.</p><p class="small">${BANK.length} sondagens no banco e mais de ${fmt(Math.floor(BANK.reduce((s,p)=>s+p.e.length,0)/1000)*1000)} respostas conhecidas. As perguntas sorteadas mudam todo dia.</p>
@@ -266,6 +286,112 @@ const x=p.x+p.vx*f*.95,y=p.y+p.vy*f*.95+.018*f*f;g.globalAlpha=Math.max(0,1-k);g
 if(t<DUR)requestAnimationFrame(step);else cv.remove()};requestAnimationFrame(step);
 tone(1568,.12,'triangle',.04);tone(2093,.15,'triangle',.035,.12);tone(2637,.2,'triangle',.03,.24)}
 /* ---------- the dive ---------- */
+/* ---------- creatures: one per ring, darker the deeper ---------- */
+const META={"0": {"w": 640, "h": 227, "marks": []}, "1": {"w": 640, "h": 374, "marks": []}, "2": {"w": 640, "h": 740, "marks": []}, "3": {"w": 640, "h": 568, "marks": []}, "4": {"w": 348, "h": 438, "marks": []}, "5": {"w": 640, "h": 334, "marks": [[12.4, 2.7]]}, "6": {"w": 433, "h": 249, "marks": [[23.3, 19.7]]}};
+/* Seven creatures, one per rarity ring. Shallow ones are bright and friendly; each ring down is darker,
+   lit less by its own body and more by eyes and lures. All share the console palette. */
+const SVGC=(()=>{
+const G='#7dffa8';
+const glow=(id,sd)=>`<filter id="${id}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="${sd}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+const svg=(j,body)=>`<svg class="cr cr${j}" viewBox="0 0 240 170" aria-hidden="true">${body}</svg>`;
+const list=[
+// 0 Sardinha: silver-green, smiling, bright
+j=>svg(j,`<defs><linearGradient id="sa${j}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fbf88"/><stop offset=".5" stop-color="#bff3d2"/><stop offset="1" stop-color="#eafff1"/></linearGradient></defs>
+<path d="M112 52 L128 32 L142 50Z" fill="#7fd9a2" stroke="${G}" stroke-width="2" stroke-linejoin="round"/>
+<path d="M118 112 L130 126 L140 110Z" fill="#7fd9a2" stroke="${G}" stroke-width="2" stroke-linejoin="round"/>
+<path d="M182 74 L222 46 L212 84 L222 122 L182 94Z" fill="#7fd9a2" stroke="${G}" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M30 84 C58 44 150 40 188 74 L188 94 C150 128 58 124 30 84Z" fill="url(#sa${j})" stroke="${G}" stroke-width="2.5"/>
+<path d="M44 76 C90 64 150 66 186 82" fill="none" stroke="#3f8f5e" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+${[104,122,140,158].map((x,i)=>`<circle cx="${x}" cy="${74+i*1.5}" r="3" fill="#3f8f5e" opacity=".5"/>`).join('')}
+<path d="M84 60 Q94 84 84 106" fill="none" stroke="#3f8f5e" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="62" cy="76" r="11" fill="#fff" stroke="#1b221e" stroke-width="2"/><circle cx="64" cy="77" r="6" fill="#0b0f0c"/><circle cx="66" cy="74" r="2.2" fill="#fff"/>
+<path d="M44 92 Q54 102 66 94" fill="none" stroke="#0b0f0c" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="74" cy="94" rx="6" ry="3" fill="#ff9e8a" opacity=".5"/>`),
+// 1 Baiacu: round, spiky, cute but a bit worried
+j=>svg(j,`<defs><radialGradient id="ba${j}" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#9fe6b8"/><stop offset=".6" stop-color="#4f9f6e"/><stop offset="1" stop-color="#2c6a46"/></radialGradient></defs>
+<path d="M162 84 L200 60 L194 86 L200 112Z" fill="#3f8f5e" stroke="${G}" stroke-width="2.5" stroke-linejoin="round"/>
+${Array.from({length:16},(_,i)=>{const a=i/16*Math.PI*2,x=110+Math.cos(a)*54,y=86+Math.sin(a)*52,x2=110+Math.cos(a)*68,y2=86+Math.sin(a)*66;return `<path d="M${x-Math.sin(a)*5} ${y+Math.cos(a)*5} L${x2} ${y2} L${x+Math.sin(a)*5} ${y-Math.cos(a)*5}" fill="#2c6a46" stroke="${G}" stroke-width="1.6" stroke-linejoin="round"/>`}).join('')}
+<circle cx="110" cy="86" r="56" fill="url(#ba${j})" stroke="${G}" stroke-width="2.5"/>
+<path d="M64 104 Q110 140 156 104" fill="#d8f7e2" opacity=".55"/>
+${[[92,58],[134,62],[148,84],[120,46],[80,80]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="#1d4a31" opacity=".7"/>`).join('')}
+<circle cx="84" cy="80" r="13" fill="#fff" stroke="#1b221e" stroke-width="2"/><circle cx="82" cy="82" r="7" fill="#0b0f0c"/><circle cx="84" cy="79" r="2.2" fill="#fff"/>
+<path d="M70 62 L94 68" stroke="#0b0f0c" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="66" cy="104" rx="7" ry="6" fill="#0b0f0c"/>
+<path d="M120 70 Q128 84 120 98" fill="none" stroke="#1d4a31" stroke-width="2.5" stroke-linecap="round"/>`),
+// 2 Polvo: deeper green, curling arms, sly half-lidded eyes
+j=>{const arm=(d)=>`<path d="${d}" fill="none" stroke="${G}" stroke-width="15" stroke-linecap="round" opacity=".9"/><path d="${d}" fill="none" stroke="#245a3b" stroke-width="11" stroke-linecap="round"/>`;
+return svg(j,`<defs><radialGradient id="po${j}" cx=".45" cy=".3" r=".8"><stop offset="0" stop-color="#4f9f6e"/><stop offset="1" stop-color="#1b4a2f"/></radialGradient></defs>
+${arm('M88 92 C70 112 46 112 40 134 C36 150 54 156 60 144')}${arm('M100 98 C92 122 84 140 96 156 C104 164 116 156 110 148')}
+${arm('M140 98 C148 122 158 138 146 154 C138 162 128 154 134 146')}${arm('M152 92 C172 110 194 110 200 132 C204 148 186 154 180 142')}
+${arm('M114 102 C112 128 120 146 126 158')}
+<path d="M70 80 C66 30 174 30 170 80 C168 104 72 104 70 80Z" fill="url(#po${j})" stroke="${G}" stroke-width="2.5"/>
+${[[100,46],[140,44],[122,34],[150,64]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.5" fill="#123522" opacity=".8"/>`).join('')}
+<circle cx="100" cy="80" r="10" fill="#d9ffe6"/><circle cx="101" cy="83" r="5" fill="#0b0f0c"/><path d="M89 80 A11 11 0 0 1 111 80Z" fill="#1b4a2f"/><path d="M89 80 L111 80" stroke="${G}" stroke-width="2" stroke-linecap="round"/><circle cx="140" cy="80" r="10" fill="#d9ffe6"/><circle cx="141" cy="83" r="5" fill="#0b0f0c"/><path d="M129 80 A11 11 0 0 1 151 80Z" fill="#1b4a2f"/><path d="M129 80 L151 80" stroke="${G}" stroke-width="2" stroke-linecap="round"/><path d="M112 94 Q120 98 128 94" fill="none" stroke="#0b0f0c" stroke-width="2.5" stroke-linecap="round"/>`)},
+// 3 Arraia: seen from above, dark teal-green, narrow glowing eyes
+j=>svg(j,`<defs><radialGradient id="ar${j}" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#2f6b48"/><stop offset="1" stop-color="#11291b"/></radialGradient>${glow('arg'+j,2.5)}</defs>
+<path d="M120 116 C122 138 140 156 172 162" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+<path d="M150 150 L160 142 L160 156Z" fill="${G}" opacity=".8"/>
+<path d="M120 22 C142 40 186 62 226 86 C190 98 150 104 120 120 C90 104 50 98 14 86 C54 62 98 40 120 22Z" fill="url(#ar${j})" stroke="${G}" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M120 34 L120 112" stroke="#3f8f5e" stroke-width="1.5" opacity=".6"/>
+<path d="M40 84 C80 78 104 82 120 92 C136 82 160 78 200 84" fill="none" stroke="#3f8f5e" stroke-width="1.5" opacity=".5"/>
+${[[70,76],[96,62],[144,62],[170,76],[120,70],[86,92],[154,92]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3" fill="${G}" opacity=".18"/>`).join('')}
+<g filter="url(#arg${j})"><path d="M98 50 L114 57" stroke="${G}" stroke-width="4" stroke-linecap="round"/><path d="M142 50 L126 57" stroke="${G}" stroke-width="4" stroke-linecap="round"/></g>`),
+// 4 Lula-gigante: long dark mantle, huge amber eye, trailing arms
+j=>svg(j,`<defs><linearGradient id="lu${j}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f4430"/><stop offset="1" stop-color="#0d1d14"/></linearGradient>${glow('lug'+j,3)}</defs>
+${[0,1,2,3,4,5].map(i=>{const y=72+i*6;return `<path d="M150 ${y} C176 ${y-18+i*6} 196 ${y+20} 232 ${y-10+i*8}" fill="none" stroke="#2e6b44" stroke-width="${5-i*.5}" stroke-linecap="round"/>`}).join('')}
+<path d="M150 80 C186 60 210 120 236 128" fill="none" stroke="${G}" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<path d="M150 86 C190 110 204 40 236 46" fill="none" stroke="${G}" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<path d="M8 84 L30 60 L44 76Z M8 84 L30 108 L44 92Z" fill="#163222" stroke="#3f8f5e" stroke-width="2" stroke-linejoin="round"/>
+<path d="M24 84 C40 62 100 58 130 68 L156 74 L156 96 L130 100 C100 110 40 106 24 84Z" fill="url(#lu${j})" stroke="#3f8f5e" stroke-width="2.5"/>
+${[[60,78],[80,90],[100,76],[70,96]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.5" fill="${G}" opacity=".25"/>`).join('')}
+<g class="keep" filter="url(#lug${j})"><circle cx="138" cy="84" r="13" fill="#ffb547"/></g>
+<circle cx="138" cy="84" r="13" fill="none" stroke="#3a2a0c" stroke-width="2"/>
+<ellipse cx="138" cy="84" rx="3.5" ry="10" fill="#0b0f0c"/><circle cx="142" cy="79" r="2" fill="#fff4d8"/>`),
+// 5 Peixe-abissal: nearly black anglerfish, needle teeth, lit only by its lure
+j=>svg(j,`<defs><radialGradient id="ab${j}" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#142a1c"/><stop offset="1" stop-color="#050907"/></radialGradient><radialGradient id="abl${j}"><stop offset="0" stop-color="#ffb547" stop-opacity=".55"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/></radialGradient>${glow('abg'+j,4)}</defs>
+<circle class="keep" cx="34" cy="40" r="34" fill="url(#abl${j})"/>
+<path d="M178 92 L222 64 L212 96 L222 130Z" fill="#0a140e" stroke="#2e6b44" stroke-width="2" stroke-linejoin="round"/>
+<path d="M150 52 L166 36 L172 56 M160 132 L176 146 L180 126" fill="none" stroke="#2e6b44" stroke-width="2" stroke-linejoin="round"/>
+<path d="M44 96 C40 54 90 30 140 44 C186 58 196 114 156 136 C120 154 66 146 52 124 L94 112Z" fill="url(#ab${j})" stroke="#2e6b44" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M44 96 L94 112 L52 124 C46 116 44 106 44 96Z" fill="#020403"/>
+${[50,58,66,74,82].map((x,i)=>`<path d="M${x} ${98+i*2.8} L${x+3} ${112+i*1.5} L${x+6} ${99+i*2.8}" fill="#d9ffe6" stroke="#9fd8b4" stroke-width=".8"/>`).join('')}
+${[54,63,72,81].map((x,i)=>`<path d="M${x} ${122-i*1.6} L${x+3} ${108-i*.5} L${x+6} ${121-i*1.6}" fill="#d9ffe6" stroke="#9fd8b4" stroke-width=".8"/>`).join('')}
+<path d="M100 44 C88 14 56 12 36 38" fill="none" stroke="#2e6b44" stroke-width="2.5" stroke-linecap="round"/>
+<g class="keep" filter="url(#abg${j})"><circle class="lure" cx="34" cy="40" r="8" fill="#ffb547"/></g><circle cx="32" cy="38" r="2.5" fill="#fff4d8"/>
+<circle cx="106" cy="72" r="6" fill="#0b0f0c" stroke="#7dffa8" stroke-width="1.5" filter="url(#abg${j})"/><circle cx="106" cy="72" r="2.5" fill="#d9ffe6"/>`),
+// 6 Um em um milhão: Nessie, a silhouette on a night lake, one pale eye
+j=>svg(j,`<defs><radialGradient id="ne${j}" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#c9b8ff" stop-opacity=".18"/><stop offset="1" stop-color="#c9b8ff" stop-opacity="0"/></radialGradient>${glow('neg'+j,3)}</defs>
+<ellipse cx="120" cy="124" rx="118" ry="44" fill="url(#ne${j})"/>
+<path d="M46 124 C44 88 52 52 68 36 C76 28 88 22 100 24 C110 26 118 30 116 36 C112 40 102 38 94 40 C84 44 80 60 80 80 C80 98 84 112 88 124Z" fill="#050806" stroke="#f4efff" stroke-width="2" stroke-linejoin="round" opacity=".95"/>
+<path d="M104 124 C110 98 140 98 146 124Z" fill="#050806" stroke="#f4efff" stroke-width="2"/>
+<path d="M162 124 C166 106 188 106 192 124Z" fill="#050806" stroke="#f4efff" stroke-width="2"/>
+<path d="M204 124 C210 116 218 112 226 104 C222 116 218 122 214 124Z" fill="#050806" stroke="#f4efff" stroke-width="2" stroke-linejoin="round"/>
+<g class="keep" filter="url(#neg${j})"><circle class="eye" cx="98" cy="30" r="3.2" fill="#f4efff"/></g>
+${[0,1,2].map(i=>`<path d="M${20+i*8} ${130+i*9} Q120 ${124+i*9} ${220-i*8} ${130+i*9}" fill="none" stroke="${G}" stroke-width="${2-i*.5}" opacity="${.7-i*.2}" stroke-linecap="round"/>`).join('')}
+${[[30,20],[200,30],[170,12],[214,60],[16,60]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.3" fill="#f4efff" opacity=".6"/>`).join('')}`)
+];
+return j=>list[j](j);
+})();
+
+function CREATURE(j){if(j===6)return SVGC(6);const m=META[j],ar=m.w/m.h;let ov='';
+ if(j===5)ov=`<i class="keep lure" style="left:${m.marks[0][0]}%;top:${m.marks[0][1]}%"></i>`;
+ if(j===6)ov=`<i class="keep eye" style="left:${m.marks[0][0]}%;top:${m.marks[0][1]}%"></i>`;
+ return `<div class="cr cr${j}" data-ar="${ar.toFixed(2)}"><img src="img/t${j}.webp" alt="" width="${m.w}" height="${m.h}">${ov}</div>`}
+/* creature entrance, one style per depth */
+async function showCreature(j){const b=$('#beast');b.className='beast'+(j>=5?' deep':'');
+b.innerHTML=`<div class="veil"></div><div class="holder"><div class="bob">${j>=4?CREATURE(j).replace('class="cr ','class="cr dark '):CREATURE(j)}</div></div>`;
+const h=b.querySelector('.holder'),sv=b.querySelector('.cr');const ar=+(sv.dataset.ar||1.4);h.style.width=j===6?'min(74%,380px)':ar<1?'min(46%,250px)':ar<1.3?'min(62%,330px)':ar<2?'min(72%,380px)':'min(82%,440px)';void b.offsetWidth;b.classList.add('on');
+if(j<=1){const p=document.createElement('div');p.className='bping';b.append(p);
+ h.animate([{transform:'scale(.15) translateY(60px)',opacity:0},{transform:'scale(1.12)',opacity:1,offset:.6},{transform:'scale(.95)',offset:.8},{transform:'none',opacity:1}],{duration:j?750:600,easing:'ease-out'});
+ for(let i=0;i<(j?12:7);i++){const d=document.createElement('i');d.className='bub';const s=6+Math.random()*12;d.style.cssText=`width:${s}px;height:${s}px;left:${30+Math.random()*40}%;top:${45+Math.random()*25}%;animation-delay:${Math.random()*.35}s`;b.append(d)}
+ return}
+if(j<=3){h.animate([{opacity:0,filter:'brightness(0)',transform:j===2?'translate(-70px,20px) scale(.85)':'translate(80px,-30px) scale(.8) rotate(8deg)'},{opacity:1,filter:'brightness(1)',transform:'none'}],{duration:j===2?1000:1400,easing:'cubic-bezier(.2,.7,.2,1)',fill:'backwards'});return}
+h.animate([{opacity:0},{opacity:1}],{duration:500,fill:'backwards'});
+if(j===4){await sleep(500);sv.classList.remove('dark');h.animate([{transform:'scale(.92)'},{transform:'scale(1.04)',offset:.7},{transform:'none'}],{duration:1000,easing:'ease-out'});return}
+if(j===5){await sleep(1300);sv.classList.remove('dark');h.animate([{transform:'scale(.85)'},{transform:'scale(1.1) translateX(-10px)',offset:.35},{transform:'none'}],{duration:900,easing:'cubic-bezier(.2,1.4,.4,1)'});return}
+const eye=sv.querySelector('.eye');await sleep(700);eye.animate([{transform:'scaleY(1)'},{transform:'scaleY(.1)'},{transform:'scaleY(1)'}],{duration:260});await sleep(600);
+sv.classList.remove('dark');h.animate([{transform:'translateY(70px)',filter:'brightness(.2)'},{transform:'none',filter:'brightness(1)'}],{duration:1500,easing:'cubic-bezier(.2,.7,.2,1)'});await sleep(900);fireworks()}
+
 /* ---------- the radar ---------- */
 const RR=TIERS.map((_,j)=>46+j*28),ANG=50*Math.PI/180;
 function buildRadar(){$('#radar').innerHTML=`<defs><linearGradient id="swg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7dffa8" stop-opacity="0"/><stop offset="1" stop-color="#7dffa8" stop-opacity=".32"/></linearGradient></defs>
@@ -277,7 +403,7 @@ ${RR.map((r,j)=>`<text class="lbl" id="rl${j}" x="${240-r*Math.sin(ANG)-4}" y="$
 <g id="probe" style="display:none"><circle class="pulse" r="10" fill="none" stroke="#ffb547" stroke-width="2"/><circle r="8" fill="#ffb547"/></g>`}
 function radarRead(m){$('#rdepth').innerHTML='PROFUNDIDADE <b>'+String(Math.round(m)).padStart(4,'0')+' m</b>';$('#rpress').textContent='PRESSÃO '+fmt(1+m/10)+' atm'}
 function radarIdle(label){const sv=$('#radar');if(!sv)return;sv.querySelectorAll('.ring').forEach(x=>x.classList.remove('pass','hit'));sv.querySelectorAll('.lbl').forEach(x=>x.classList.remove('hit'));$('#probe').style.display='none';
-const rs=$('#rsig');rs.classList.remove('on');rs.innerHTML='';$('#skiphint').textContent='';$('#radarbox').classList.remove('live');$('#radarbox').onclick=null;radarRead(0);if(label){rs.innerHTML=`<span style="color:#5fae7d;font:600 14px 'Chakra Petch',sans-serif;letter-spacing:.04em">${esc(label)}</span>`;rs.classList.add('on')}}
+const bb=$('#beast');if(bb){bb.className='beast';bb.innerHTML=''}const rs=$('#rsig');rs.classList.remove('on');rs.innerHTML='';$('#skiphint').textContent='';$('#radarbox').classList.remove('live');$('#radarbox').onclick=null;radarRead(0);if(label){rs.innerHTML=`<span style="color:#5fae7d;font:600 14px 'Chakra Petch',sans-serif;letter-spacing:.04em">${esc(label)}</span>`;rs.classList.add('on')}}
 function reveal(ans,r,t,code){const last=mode==='daily'&&me.done;
 stage.innerHTML=`<div class="meta"><span>${mode==='daily'?`Sondagem ${me.i} de 7`:'Treino livre'}</span><span>${ans?'sinal recebido':'sem sinal'}</span></div><h2 class="q">${esc(cur.q)}</h2>${ans?`<p class="your">Sua sonda: <b>${esc(ans.name)}</b></p>`:''}<div class="after" id="after"></div>`;
 radarIdle('');const box=$('#radarbox'),probe=$('#probe'),rs=$('#rsig');
@@ -293,9 +419,9 @@ const tween=(a,b,dur)=>new Promise(res=>{const t0=performance.now();const f=now=
 (async()=>{if(!ans){await wait(200);finish();return}
 probe.style.display='';set(0);ping();await wait(450);
 let x=0;for(let j=0;j<=r.ti;j++){await tween(x,RR[j],480+j*120);x=RR[j];const rg=$('#rg'+j);rg.classList.add('pass');if(j<r.ti){blip(j+1);await wait(300+j*140)}}
-$('#rg'+r.ti).classList.add('hit');$('#rl'+r.ti).classList.add('hit');finale(r.ti);if(r.ti===6)fireworks();finish()})();
+$('#rg'+r.ti).classList.add('hit');$('#rl'+r.ti).classList.add('hit');finale(r.ti);showCreature(r.ti);finish()})();
 function finish(){box.onclick=null;box.classList.remove('live');$('#skiphint').textContent='';
-rs.innerHTML=ans?`<b style="color:${t.c}">SINAL: ${t.n.toUpperCase()}</b><span>+${t.p} pontos · +${fmt(t.p*MPP)} m</span>`:`<b style="color:var(--red)">${code===-2?'ACABOU O AR':'SEM SINAL'}</b><span>Nenhum ponto nesta sondagem</span>`;rs.classList.add('on');
+rs.innerHTML=ans?`<b style="color:${t.c}">SINAL: ${t.n.toUpperCase()}</b><span>+${t.p} pontos · +${fmt(t.p*MPP)} m</span>`:`<b style="color:var(--red)">${code===-2?'ACABOU O AR':'SEM SINAL'}</b><span>Nenhum ponto nesta sondagem</span>`;const myRs=rs.innerHTML,dl=ans?(r.ti>=5?1600:r.ti>=4?900:350):0;setTimeout(()=>{if(rs.innerHTML===myRs)rs.classList.add('on')},dl);
 const tops=top3(cur),dc2=deepCut(cur,ans&&ans.k),after=$('#after');
 after.innerHTML=`${ans?`<div class="sig" style="color:${t.c}">${t.n}</div><div class="pts">+${t.p} pontos · +${fmt(t.p*MPP)} m</div><p class="small">Raridade estimada: ${RD[Math.min(6,Math.max(0,(ans.r||4)-1))]}.${r.C?` ${r.n} de ${r.C} ${r.C===1?'jogador deu':'jogadores deram'} essa resposta.`:''}${ans.extra?' Essa nem estava na nossa lista.':''}</p>`:`<div class="sig" style="color:var(--red)">${code===-2?'Acabou o ar':'Pulou'}</div>`}<p class="small">Mais comuns: ${tops.map(esc).join(' · ')}</p>${dc2?`<p class="small">Um sinal abissal seria: <b style="color:var(--amber)">${esc(dc2)}</b></p>`:''}<div class="row"><button class="btn" id="nx">${last?'Ver meu mergulho':mode==='daily'?'Próxima sondagem':'Outra sondagem'}</button>${mode==='practice'?'<button class="ghost" id="bk">Voltar</button>':''}</div>`;
 requestAnimationFrame(()=>after.classList.add('on'));gauge();$('#nx').onclick=()=>{audio();last?screenDone():next()};if(innerWidth<760)setTimeout(()=>after.scrollIntoView({behavior:'smooth',block:'nearest'}),600);else $('#nx').focus();const bk=$('#bk');if(bk)bk.onclick=screenIntro}}
@@ -314,7 +440,7 @@ catch(e){body.innerHTML='<p>Não consegui carregar essas respostas.</p>'}}
 async function board(){const el=$('#board');if(!online){el.textContent='O placar aparece quando a página está conectada.';return}try{const[{data:rows},{data:n}]=await Promise.all([sb.rpc('leaderboard',{p_day:today}),sb.rpc('player_count')]);players=n||0;status();if(!rows||!rows.length){el.textContent='Ninguém terminou o mergulho de hoje ainda.';return}const ol=document.createElement('ol');ol.className='board';rows.forEach((o,k)=>{const li=document.createElement('li');if(o.is_me)li.className='me';const a=document.createElement('button');a.type='button';a.className='who';a.textContent=`${k+1}. ${o.is_me?o.nickname+' (você)':o.nickname}`;a.title='Ver respostas';a.onclick=()=>peek(o.ref,o.nickname,o.is_me);const b=document.createElement('span');b.textContent=fmt(o.score*MPP)+' m';li.append(a,b);ol.append(li)});el.replaceChildren(ol)}catch(e){el.textContent='Não consegui carregar o placar.'}}
 $('#tiers').innerHTML=TIERS.map((t,j)=>`<li>${ringIcon(j)}<span><b style="color:${t.c}">${t.n}</b><br><span class="small">${t.d}</span></span><span class="p">${t.p} pts</span></li>`).join('');
 buildCol();buildRadar();gauge();radarIdle('');
-function loadLocal(){try{const s=JSON.parse(localStorage.getItem('abissal-me')||'null');if(s)me=Object.assign(blank(),s)}catch(e){}}
+function loadLocal(){try{const s=JSON.parse(localStorage.getItem('abissal-me')||'null');if(s&&!(s.d===today&&s.set!==DAILY.map(i=>BANK[i].id).join()))me=Object.assign(blank(),s)}catch(e){}}
 try{nickname=localStorage.getItem('abissal-nick')||''}catch(e){}
 (async()=>{
 try{const res=await fetch('prompts.json');BANK=(await res.json()).map(build)}catch(e){stage.innerHTML='<p>Não consegui carregar as perguntas. Recarregue a página.</p>';return}
